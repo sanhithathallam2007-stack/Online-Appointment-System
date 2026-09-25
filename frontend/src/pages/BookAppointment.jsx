@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import API_BASE_URL from '../api'
 
 const parseTimeToMinutes = (value) => {
   if (value === null || value === undefined || value === '') {
@@ -125,7 +126,7 @@ function BookAppointment() {
       setScheduleLoading(true)
       setScheduleError('')
 
-      const response = await fetch(`http://localhost:8080/api/schedules/provider/${providerId}`)
+      const response = await fetch(`${API_BASE_URL}/api/schedules/provider/${providerId}`)
 
       if (!response.ok) {
         throw new Error('Unable to load available slots.')
@@ -152,7 +153,7 @@ function BookAppointment() {
         setProviderLoading(true)
         setProviderError('')
 
-        const response = await fetch(`http://localhost:8080/api/providers/${providerId}`)
+        const response = await fetch(`${API_BASE_URL}/api/providers/${providerId}`)
 
         if (!response.ok) {
           throw new Error('Unable to load provider details.')
@@ -236,7 +237,7 @@ function BookAppointment() {
 
     try {
       const response = await fetch(
-        `http://localhost:8080/api/appointments/book?userId=${userId}&providerId=${providerId}&scheduleId=${selectedScheduleId}`,
+        `${API_BASE_URL}/api/appointments/book?userId=${userId}&providerId=${providerId}&scheduleId=${selectedScheduleId}`,
         {
           method: 'POST',
         },

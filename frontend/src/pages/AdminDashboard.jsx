@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
+import API_BASE_URL from '../api'
 
 const DEFAULT_STATS = {
   totalUsers: 0,
@@ -35,7 +36,7 @@ function AdminDashboard() {
       setLoadingStats(true)
       setStatsError('')
 
-      const response = await fetch('http://localhost:8080/api/admin/stats')
+      const response = await fetch(`${API_BASE_URL}/api/admin/stats`)
 
       if (!response.ok) {
         throw new Error('Unable to load dashboard statistics.')

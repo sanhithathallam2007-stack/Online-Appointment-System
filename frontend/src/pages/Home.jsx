@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import API_BASE_URL from '../api'
 
 const steps = [
   { title: 'Login or Register', description: 'Create your account or sign in to access the system.' },

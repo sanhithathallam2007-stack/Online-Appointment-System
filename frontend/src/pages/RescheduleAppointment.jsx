@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import API_BASE_URL from '../api'
 
 function RescheduleAppointment() {
   const { id } = useParams()
@@ -113,7 +114,7 @@ function RescheduleAppointment() {
     if (!id) return
 
     try {
-      const response = await fetch(`http://localhost:8080/api/appointments/${id}`)
+      const response = await fetch(`${API_BASE_URL}/api/appointments/${id}`)
 
       if (!response.ok) {
         throw new Error('Unable to load appointment details.')
@@ -129,7 +130,7 @@ function RescheduleAppointment() {
       }
 
       const schedulesResponse = await fetch(
-        `http://localhost:8080/api/schedules/provider/${providerId}`,
+        `${API_BASE_URL}/api/schedules/provider/${providerId}`,
       )
 
       if (!schedulesResponse.ok) {
@@ -227,7 +228,7 @@ function RescheduleAppointment() {
       setError('')
 
       const response = await fetch(
-        `http://localhost:8080/api/appointments/${id}/reschedule?scheduleId=${selectedScheduleId}`,
+        `${API_BASE_URL}/api/appointments/${id}/reschedule?scheduleId=${selectedScheduleId}`,
         {
           method: 'PUT',
         },

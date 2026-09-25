@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
+import API_BASE_URL from '../api'
 
 const subcategoriesByCategory = {
   1: [
@@ -161,7 +162,7 @@ function Subcategories() {
         setLoading(true)
         setError('')
 
-        const response = await fetch('http://localhost:8080/api/categories')
+        const response = await fetch(`${API_BASE_URL}/api/categories`)
 
         if (!response.ok) {
           throw new Error('Unable to load categories. Please make sure Spring Boot is running.')

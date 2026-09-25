@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import API_BASE_URL from '../api'
 
 const normalizeStatus = (value) => String(value || '').toUpperCase()
 
@@ -84,7 +85,7 @@ function MyAppointments() {
       setLoading(true)
       setError('')
 
-      const response = await fetch(`http://localhost:8080/api/appointments/user/${userId}`)
+      const response = await fetch(`${API_BASE_URL}/api/appointments/user/${userId}`)
 
       if (!response.ok) {
         throw new Error('Unable to load your appointments. Please try again.')
@@ -128,7 +129,7 @@ function MyAppointments() {
 
   const handleCancelAppointment = async (appointmentId) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/appointments/${appointmentId}/cancel`, {
+      const response = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}/cancel`, {
         method: 'PUT',
       })
 

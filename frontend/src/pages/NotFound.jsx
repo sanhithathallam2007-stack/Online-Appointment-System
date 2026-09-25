@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import API_BASE_URL from '../api'
 
 function NotFound() {
   return (

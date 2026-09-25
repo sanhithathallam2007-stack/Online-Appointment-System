@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import API_BASE_URL from '../api'
 
 function Hospitals() {
   const [hospitals, setHospitals] = useState([])
@@ -12,7 +13,7 @@ function Hospitals() {
         setLoading(true)
         setError('')
 
-        const response = await fetch('http://localhost:8080/api/providers')
+        const response = await fetch(`${API_BASE_URL}/api/providers`)
 
         if (!response.ok) {
           throw new Error('Unable to load hospitals. Please make sure Spring Boot is running.')

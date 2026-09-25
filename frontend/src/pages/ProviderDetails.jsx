@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import API_BASE_URL from '../api'
 
 const parseTimeToMinutes = (value) => {
   if (value === null || value === undefined || value === '') {
@@ -161,7 +162,7 @@ function ProviderDetails() {
       setProviderLoading(true)
       setProviderError('')
 
-      const response = await fetch(`http://localhost:8080/api/providers/${providerId}`)
+      const response = await fetch(`${API_BASE_URL}/api/providers/${providerId}`)
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -194,7 +195,7 @@ function ProviderDetails() {
       setScheduleLoading(true)
       setScheduleError('')
 
-      const response = await fetch(`http://localhost:8080/api/schedules/provider/${providerId}`)
+      const response = await fetch(`${API_BASE_URL}/api/schedules/provider/${providerId}`)
 
       if (!response.ok) {
         throw new Error('Unable to load available slots. Please try again.')

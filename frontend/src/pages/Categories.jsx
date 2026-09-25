@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import API_BASE_URL from '../api'
 
 function Categories() {
   const [categories, setCategories] = useState([])
@@ -12,7 +13,7 @@ function Categories() {
         setLoading(true)
         setError('')
 
-        const response = await fetch('http://localhost:8080/api/categories')
+        const response = await fetch(`${API_BASE_URL}/api/categories`)
 
         if (!response.ok) {
           throw new Error('Unable to load categories. Please make sure Spring Boot is running.')

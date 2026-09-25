@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import API_BASE_URL from '../api'
 
 function PublicRepresentativeOffices() {
   const [searchParams] = useSearchParams()
@@ -14,7 +15,7 @@ function PublicRepresentativeOffices() {
         setLoading(true)
         setError('')
 
-        const response = await fetch('http://localhost:8080/api/providers')
+        const response = await fetch(`${API_BASE_URL}/api/providers`)
 
         if (!response.ok) {
           throw new Error('Unable to load representative offices. Please make sure Spring Boot is running.')

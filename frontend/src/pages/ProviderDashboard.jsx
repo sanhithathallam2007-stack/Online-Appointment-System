@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import API_BASE_URL from '../api'
 
 const normalizeStatus = (value) => String(value || '').toUpperCase()
 
@@ -111,7 +112,7 @@ function ProviderDashboard() {
       setLoadingAppointments(true)
       setErrorAppointments('')
 
-      const response = await fetch(`http://localhost:8080/api/appointments/provider/${providerId}`)
+      const response = await fetch(`${API_BASE_URL}/api/appointments/provider/${providerId}`)
 
       if (!response.ok) {
         throw new Error('Unable to load appointments. Please try again.')
@@ -133,7 +134,7 @@ function ProviderDashboard() {
       setLoadingSchedules(true)
       setErrorSchedules('')
 
-      const response = await fetch(`http://localhost:8080/api/schedules/provider/${providerId}`)
+      const response = await fetch(`${API_BASE_URL}/api/schedules/provider/${providerId}`)
 
       if (!response.ok) {
         throw new Error('Unable to load schedules. Please try again.')
@@ -159,7 +160,7 @@ function ProviderDashboard() {
       (!storedProvider.organization && !storedProvider.company && !storedProvider.hospital)
 
     if (needsProfileRefresh) {
-      fetch(`http://localhost:8080/api/providers/${providerId}`)
+      fetch(`${API_BASE_URL}/api/providers/${providerId}`)
         .then((response) => {
           if (!response.ok) {
             return
@@ -210,7 +211,7 @@ function ProviderDashboard() {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/api/appointments/${appointmentId}/${action}`, {
+      const response = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}/${action}`, {
         method: 'PUT',
       })
 

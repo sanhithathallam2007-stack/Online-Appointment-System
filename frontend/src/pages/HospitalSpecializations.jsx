@@ -1,4 +1,5 @@
 import { Link, useSearchParams } from 'react-router-dom'
+import API_BASE_URL from '../api'
 
 const specializationsByType = {
   doctor: [
