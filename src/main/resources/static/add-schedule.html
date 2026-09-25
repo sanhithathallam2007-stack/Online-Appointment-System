@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Add Schedule</title>
+
+    <link rel="stylesheet"
+          href="/css/style.css">
+
+</head>
+
+<body>
+
+<div class="app-page">
+
+    <div class="page-header">
+
+        <p class="eyebrow">
+            Provider Dashboard
+        </p>
+
+        <h1>
+            Add Appointment Slot
+        </h1>
+
+        <p class="page-subtitle">
+            Create a new available appointment slot.
+        </p>
+
+        <a
+            href="/provider-dashboard.html"
+            class="back-button">
+
+            ← Back to Dashboard
+
+        </a>
+
+    </div>
+
+
+    <div class="glass-card">
+
+        <label>
+            Appointment Date
+        </label>
+
+        <input
+            type="date"
+            id="appointmentDate"
+        >
+
+
+        <label>
+            Appointment Time
+        </label>
+
+        <input
+            type="time"
+            id="appointmentTime"
+        >
+
+
+        <button
+            class="glass-button"
+            onclick="addSchedule()">
+
+            Add Available Slot
+
+        </button>
+
+
+        <p
+            id="message"
+            style="margin-top: 20px;">
+
+        </p>
+
+    </div>
+
+</div>
+
+
+<script>
+
+async function addSchedule() {
+
+    const provider =
+        JSON.parse(
+            localStorage.getItem(
+                "loggedInProvider"
+            )
+        );
+
+
+    if (!provider) {
+
+        alert(
+            "Please login as a provider first."
+        );
+
+        window.location.href =
+            "/provider-login.html";
+
+        return;
+
+    }
+
+
+    const appointmentDate =
+        document.getElementById(
+            "appointmentDate"
+        ).value;
+
+
+    const appointmentTime =
+        document.getElementById(
+            "appointmentTime"
+        ).value;
+
+
+    const message =
+        document.getElementById(
+            "message"
+        );
+
+
+    if (
+        !appointmentDate ||
+        !appointmentTime
+    ) {
+
+        message.innerText =
+            "Please select date and time.";
+
+        return;
+
+    }
+
+
+    const schedule = {
+
+        providerId:
+            provider.id,
+
+        appointmentDate:
+            appointmentDate,
+
+        appointmentTime:
+            appointmentTime,
+
+        available:
+            true
+
+    };
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/schedules",
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(
+                            schedule
+                        )
+
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Failed to add schedule"
+            );
+
+        }
+
+
+        message.innerText =
+            "Appointment slot added successfully!";
+
+
+        document.getElementById(
+            "appointmentDate"
+        ).value = "";
+
+
+        document.getElementById(
+            "appointmentTime"
+        ).value = "";
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        message.innerText =
+            "Unable to add appointment slot.";
+
+    }
+
+}
+
+</script>
+
+
+</body>
+
+</html>
