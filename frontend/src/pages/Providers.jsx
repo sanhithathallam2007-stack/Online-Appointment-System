@@ -1,15 +1,29 @@
+
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import API_BASE_URL from '../api'
 
 function Providers() {
+  const { pathname } = useLocation()
   const [searchParams] = useSearchParams()
+
   const categoryId = searchParams.get('categoryId')
   const organization = searchParams.get('organization')
   const profession = searchParams.get('profession')
   const specialization = searchParams.get('specialization')
   const subject = searchParams.get('subject')
   const department = searchParams.get('department')
+
+  const selectedCategoryId =
+    categoryId || (pathname === '/school-providers' ? '2' : '')
+
+  const [providers, setProviders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [searchText, setSearchText] = useState('')
+
+  const normalize = (value) =>
+    String(value || '').trim().replace(/\s+/g, ' ').toLowerCase()
 
   const normalizeProfessionValue = (value) => {
     if (!value) return ''
@@ -42,24 +56,11 @@ function Providers() {
       artists: 'Artist',
     }
 
-    const normalizedKey = String(value).trim().replace(/\s+/g, ' ').toLowerCase()
-    return professionMap[normalizedKey] || String(value).trim()
+    const key = normalize(value)
+    return professionMap[key] || String(value).trim()
   }
 
-  const [providers, setProviders] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-
-  const showCategoryPrompt = !categoryId && !organization && !profession && !specialization && !subject && !department
-
   useEffect(() => {
-    if (showCategoryPrompt) {
-      setProviders([])
-      setLoading(false)
-      setError('')
-      return
-    }
-
     const fetchProviders = async () => {
       try {
         setLoading(true)
@@ -68,7 +69,9 @@ function Providers() {
         const response = await fetch(`${API_BASE_URL}/api/providers`)
 
         if (!response.ok) {
-          throw new Error('Unable to load providers. Please make sure Spring Boot is running.')
+          throw new Error(
+            'Unable to load providers. Please make sure Spring Boot is running.',
+          )
         }
 
         const data = await response.json()
@@ -76,60 +79,73 @@ function Providers() {
 
         let filteredProviders = allProviders
 
-        if (categoryId) {
+        if (selectedCategoryId) {
           filteredProviders = filteredProviders.filter(
-            (provider) => String(provider.categoryId) === String(categoryId),
+            (provider) =>
+              String(provider.categoryId) === String(selectedCategoryId),
           )
         }
 
         if (organization) {
           filteredProviders = filteredProviders.filter(
             (provider) =>
-              String(provider.organization || '').trim().toLowerCase() ===
-              String(organization).trim().toLowerCase(),
+              normalize(provider.organization) === normalize(organization),
           )
         }
 
         if (profession) {
-          const normalizedProfession = normalizeProfessionValue(profession)
+          const requestedProfession = normalize(
+            normalizeProfessionValue(profession),
+          )
 
           filteredProviders = filteredProviders.filter(
             (provider) =>
-              String(provider.profession || '').trim().toLowerCase() ===
-              String(normalizedProfession).trim().toLowerCase(),
+              normalize(provider.profession) === requestedProfession,
           )
         }
 
+        if (specialization) {
+          filteredProviders = filteredProviders.filter(
+            (provider) =>
+              normalize(provider.specialization) === normalize(specialization),
+          )
+        }
+
+        // Education subjects and departments are stored in specialization.
         if (subject) {
           filteredProviders = filteredProviders.filter(
             (provider) =>
-              String(provider.subject || '').trim().toLowerCase() ===
-              String(subject).trim().toLowerCase(),
+              normalize(provider.specialization) === normalize(subject),
           )
         }
 
         if (department) {
           filteredProviders = filteredProviders.filter(
             (provider) =>
-              String(provider.department || '').trim().toLowerCase() ===
-              String(department).trim().toLowerCase(),
+              normalize(provider.specialization) === normalize(department),
           )
         }
 
         setProviders(filteredProviders)
       } catch (err) {
-        if (err instanceof TypeError) {
-          setError('Unable to load providers. Please make sure Spring Boot is running.')
-        } else {
-          setError(err.message || 'Unable to load providers. Please make sure Spring Boot is running.')
-        }
+        setError(
+          err.message ||
+            'Unable to load providers. Please make sure Spring Boot is running.',
+        )
       } finally {
         setLoading(false)
       }
     }
 
     fetchProviders()
-  }, [categoryId, organization, profession, specialization, subject, department])
+  }, [
+    selectedCategoryId,
+    organization,
+    profession,
+    specialization,
+    subject,
+    department,
+  ])
 
   const categoryTitles = {
     1: 'Hospital Providers',
@@ -142,51 +158,122 @@ function Providers() {
 
   const getProviderName = (provider) => provider?.name || 'Unknown Provider'
   const getProfession = (provider) => provider?.profession || 'Not specified'
-  const getOrganization = (provider) => provider?.organization || 'Not specified'
-  const getProviderId = (provider) => provider?.id
+  const getOrganization = (provider) =>
+    provider?.organization || 'Not specified'
 
-  const selectedCategoryHeading = categoryId ? categoryTitles[categoryId] || 'Filtered Providers' : 'Find a Provider'
+  const selectedCategoryHeading = selectedCategoryId
+    ? categoryTitles[selectedCategoryId] || 'Filtered Providers'
+    : 'All Providers'
+
   const selectedOrganizationLabel = organization ? ` — ${organization}` : ''
   const selectedProfessionLabel = profession ? ` — ${profession}` : ''
-  const selectedSpecializationLabel = specialization ? ` — ${specialization}` : ''
+  const selectedSpecializationLabel = specialization
+    ? ` — ${specialization}`
+    : ''
+
+  const searchedProviders = providers.filter((provider) => {
+    const query = normalize(searchText)
+    if (!query) return true
+
+    return [
+      provider.name,
+      provider.profession,
+      provider.organization,
+      provider.specialization,
+      provider.subject,
+      provider.department,
+    ].some((value) => normalize(value).includes(query))
+  })
 
   return (
-    <main className="providers-page">
-      <section className="providers-header">
-        <span className="section-tag">Providers</span>
-        <h1>{selectedCategoryHeading}{selectedOrganizationLabel}{selectedProfessionLabel}{selectedSpecializationLabel}</h1>
-        <p>Choose a provider and book an appointment at a convenient time.</p>
-      </section>
-
-      {showCategoryPrompt && (
-        <div className="status-message info-box">
-          <strong>Please choose a category first.</strong>
-          <div className="hero-actions">
-            <Link to="/categories" className="primary-btn">
-              Go to Categories
-            </Link>
-          </div>
+    <main className="providers-page explore-screen">
+      <section className="providers-header explore-heading">
+        <div>
+          <span className="section-tag">Explore</span>
+          <h1>
+            {selectedCategoryHeading}
+            {selectedOrganizationLabel}
+            {selectedProfessionLabel}
+            {selectedSpecializationLabel}
+          </h1>
+          <p>
+            Browse providers from the live directory and choose someone to view
+            availability.
+          </p>
         </div>
-      )}
+
+        <label className="provider-search">
+          <span className="sr-only">
+            Search by provider name, specialty, or organization
+          </span>
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+          >
+            <circle cx="10.8" cy="10.8" r="6.8" />
+            <path d="m16 16 4.2 4.2" />
+          </svg>
+          <input
+            type="search"
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
+            placeholder="Search providers"
+          />
+        </label>
+      </section>
 
       {loading && <div className="status-message">Loading providers...</div>}
 
-      {!loading && error && <div className="status-message error">{error}</div>}
-
-      {!loading && !error && providers.length === 0 && !showCategoryPrompt && (
-        <div className="status-message">No providers available.</div>
+      {!loading && error && (
+        <div className="status-message error">{error}</div>
       )}
 
-      {!loading && !error && providers.length > 0 && (
+      {!loading && !error && providers.length === 0 && (
+        <div className="empty-state">
+          <span className="empty-state-icon" aria-hidden="true">
+            ⌕
+          </span>
+          <h2>No providers match this selection</h2>
+          <p>Try clearing a category, organization, or profession filter.</p>
+          <Link to="/providers" className="secondary-btn">
+            View all providers
+          </Link>
+        </div>
+      )}
+
+      {!loading &&
+        !error &&
+        providers.length > 0 &&
+        searchedProviders.length === 0 && (
+          <div className="empty-state">
+            <h2>No providers found</h2>
+            <p>Try another name, specialty, or organization.</p>
+            <button
+              type="button"
+              className="secondary-btn"
+              onClick={() => setSearchText('')}
+            >
+              Clear search
+            </button>
+          </div>
+        )}
+
+      {!loading && !error && searchedProviders.length > 0 && (
         <div className="providers-grid">
-          {providers.map((provider) => {
-            const providerId = getProviderId(provider)
+          {searchedProviders.map((provider) => {
+            const providerId = provider?.id
             const providerName = getProviderName(provider)
 
             return (
-              <article key={providerId ?? providerName} className="provider-card">
+              <article
+                key={providerId ?? providerName}
+                className="provider-card provider-card-premium"
+              >
                 <div className="provider-avatar" aria-hidden="true">
-                  <span>•</span>
+                  <span>{providerName.charAt(0).toUpperCase()}</span>
                 </div>
 
                 <h2>{providerName}</h2>
@@ -200,7 +287,10 @@ function Providers() {
                   </p>
                 </div>
 
-                <Link to={providerId ? `/providers/${providerId}` : '/providers'} className="provider-button">
+                <Link
+                  to={providerId ? `/providers/${providerId}` : '/providers'}
+                  className="provider-button"
+                >
                   View Details
                 </Link>
               </article>

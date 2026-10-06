@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,6 +6,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Providers - Online Appointment</title>
     <link rel="stylesheet" href="/css/style.css">
+
+    <style>
+        .provider-search {
+            width: 100%;
+            max-width: 600px;
+            margin: 28px 0;
+        }
+
+        .provider-search input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 16px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.65);
+            color: #20212b;
+            font-size: 16px;
+            outline: none;
+            box-shadow: 0 8px 24px rgba(40, 50, 90, 0.06);
+        }
+
+        .provider-search input:focus {
+            border-color: #858eea;
+            box-shadow: 0 0 0 3px rgba(133, 142, 234, 0.15);
+        }
+
+        .search-count {
+            color: #686b78;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    </style>
 </head>
 
 <body>
@@ -23,6 +56,17 @@
         <a href="/categories.html" class="back-button">← Categories</a>
     </div>
 
+    <!-- Search bar -->
+    <div class="provider-search">
+        <input
+            type="search"
+            id="providerSearch"
+            placeholder="🔍 Search by provider, profession, or organization..."
+            aria-label="Search providers"
+        >
+        <p id="searchCount" class="search-count"></p>
+    </div>
+
     <div id="providerContainer" class="card-grid">
         <div class="glass-card">
             <p>Loading providers...</p>
@@ -35,9 +79,12 @@
 document.addEventListener("DOMContentLoaded", async function () {
 
     const container = document.getElementById("providerContainer");
+    const searchInput = document.getElementById("providerSearch");
+    const searchCount = document.getElementById("searchCount");
 
-    const categoryId =
-        localStorage.getItem("selectedCategoryId");
+    const categoryId = localStorage.getItem("selectedCategoryId");
+
+    let filteredProviders = [];
 
     try {
 
@@ -49,50 +96,34 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         const providers = await response.json();
 
-        container.innerHTML = "";
-
-        const filteredProviders = categoryId
-            ? providers.filter(
-                provider =>
-                    String(provider.categoryId) === String(categoryId)
+        // Keep the selected category filter
+        filteredProviders = categoryId
+            ? providers.filter(provider =>
+                String(provider.categoryId) === String(categoryId)
               )
             : providers;
 
-        if (filteredProviders.length === 0) {
+        renderProviders(filteredProviders);
 
-            container.innerHTML = `
-                <div class="glass-card">
-                    <h2>No providers available</h2>
-                    <p>Please choose another category.</p>
-                </div>
-            `;
+        // Search automatically while typing
+        searchInput.addEventListener("input", function () {
 
-            return;
-        }
+            const searchText = searchInput.value
+                .trim()
+                .toLowerCase();
 
-        filteredProviders.forEach(function (provider) {
+            const results = filteredProviders.filter(provider => {
 
-            const card = document.createElement("div");
+                const name = (provider.name || "").toLowerCase();
+                const profession = (provider.profession || "").toLowerCase();
+                const organization = (provider.organization || "").toLowerCase();
 
-            card.className = "glass-card provider-card";
+                return name.includes(searchText) ||
+                       profession.includes(searchText) ||
+                       organization.includes(searchText);
+            });
 
-            card.innerHTML = `
-                <div class="provider-icon">👤</div>
-
-                <h2>${provider.name}</h2>
-
-                <p><strong>${provider.profession}</strong></p>
-
-                <p>${provider.organization}</p>
-
-                <button
-                    class="glass-button"
-                    onclick="viewProvider(${provider.id})">
-                    View Available Slots
-                </button>
-            `;
-
-            container.appendChild(card);
+            renderProviders(results);
         });
 
     } catch (error) {
@@ -106,14 +137,77 @@ document.addEventListener("DOMContentLoaded", async function () {
             </div>
         `;
     }
+
+    function renderProviders(providers) {
+
+        container.innerHTML = "";
+
+        searchCount.textContent =
+            providers.length + (providers.length === 1
+                ? " provider found"
+                : " providers found");
+
+        if (providers.length === 0) {
+
+            const emptyCard = document.createElement("div");
+            emptyCard.className = "glass-card";
+
+            const heading = document.createElement("h2");
+            heading.textContent = "No providers found";
+
+            const message = document.createElement("p");
+            message.textContent =
+                "Try another name, profession, or organization.";
+
+            emptyCard.appendChild(heading);
+            emptyCard.appendChild(message);
+            container.appendChild(emptyCard);
+
+            return;
+        }
+
+        providers.forEach(function (provider) {
+
+            const card = document.createElement("div");
+            card.className = "glass-card provider-card";
+
+            const icon = document.createElement("div");
+            icon.className = "provider-icon";
+            icon.textContent = "👤";
+
+            const name = document.createElement("h2");
+            name.textContent = provider.name || "Provider";
+
+            const profession = document.createElement("p");
+            const strong = document.createElement("strong");
+            strong.textContent = provider.profession || "";
+            profession.appendChild(strong);
+
+            const organization = document.createElement("p");
+            organization.textContent = provider.organization || "";
+
+            const button = document.createElement("button");
+            button.className = "glass-button";
+            button.textContent = "View Available Slots";
+
+            button.addEventListener("click", function () {
+                viewProvider(provider.id);
+            });
+
+            card.appendChild(icon);
+            card.appendChild(name);
+            card.appendChild(profession);
+            card.appendChild(organization);
+            card.appendChild(button);
+
+            container.appendChild(card);
+        });
+    }
 });
 
 function viewProvider(providerId) {
 
-    localStorage.setItem(
-        "selectedProviderId",
-        providerId
-    );
+    localStorage.setItem("selectedProviderId", providerId);
 
     window.location.href = "/appointments.html";
 }

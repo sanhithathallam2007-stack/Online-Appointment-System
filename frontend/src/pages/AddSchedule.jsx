@@ -1,3 +1,4 @@
+
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import API_BASE_URL from '../api'
@@ -5,15 +6,18 @@ import API_BASE_URL from '../api'
 function AddSchedule() {
   const navigate = useNavigate()
   const providerId = localStorage.getItem('providerId')
+
   const [formData, setFormData] = useState({
     appointmentDate: '',
     appointmentTime: '',
   })
+
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
   const handleChange = (event) => {
     const { name, value } = event.target
+
     setFormData((previous) => ({
       ...previous,
       [name]: value,
@@ -54,7 +58,11 @@ function AddSchedule() {
         throw new Error(responseText || 'Unable to add the new slot.')
       }
 
-      localStorage.setItem('providerDashboardMessage', 'New available slot added.')
+      localStorage.setItem(
+        'providerDashboardMessage',
+        'New available slot added.',
+      )
+
       navigate('/provider-dashboard')
     } catch (err) {
       setError(err.message || 'Unable to add the new slot.')
@@ -66,7 +74,10 @@ function AddSchedule() {
   if (!providerId) {
     return (
       <main className="appointments-page">
-        <div className="status-message error">Please login as a provider.</div>
+        <div className="status-message error">
+          Please login as a provider.
+        </div>
+
         <div className="hero-actions">
           <Link to="/provider-login" className="primary-btn">
             Provider Login
@@ -77,18 +88,19 @@ function AddSchedule() {
   }
 
   return (
-    <main className="appointments-page">
+    <main className="appointments-page add-schedule-page">
       <section className="dashboard-header">
         <div>
           <span className="section-tag">Manage Available Slots</span>
           <h1>Add New Slot</h1>
+          <p>Choose a date and time to create a new available slot.</p>
         </div>
       </section>
 
-      <div className="auth-card">
+      <div className="auth-card add-schedule-card">
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label htmlFor="appointmentDate">Date</label>
+            <label htmlFor="appointmentDate">Appointment Date</label>
             <input
               id="appointmentDate"
               type="date"
@@ -100,7 +112,7 @@ function AddSchedule() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="appointmentTime">Time</label>
+            <label htmlFor="appointmentTime">Appointment Time</label>
             <input
               id="appointmentTime"
               type="time"
@@ -111,12 +123,21 @@ function AddSchedule() {
             />
           </div>
 
-          {error && <div className="status-message error">{error}</div>}
+          {error && (
+            <div className="status-message error">
+              {error}
+            </div>
+          )}
 
-          <div className="appointment-actions">
-            <button type="submit" className="primary-btn" disabled={submitting}>
+          <div className="appointment-actions add-schedule-actions">
+            <button
+              type="submit"
+              className="primary-btn"
+              disabled={submitting}
+            >
               {submitting ? 'Adding slot...' : 'Add Slot'}
             </button>
+
             <Link to="/provider-dashboard" className="secondary-btn">
               Back to Dashboard
             </Link>

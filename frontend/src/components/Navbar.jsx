@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 const isUserLoggedIn = () =>
   Boolean(
@@ -12,6 +12,8 @@ const isUserLoggedIn = () =>
 function Navbar() {
   const navigate = useNavigate()
   const userLoggedIn = isUserLoggedIn()
+  const userName = localStorage.getItem('userName') || 'Your profile'
+  const userInitial = userName.trim().charAt(0).toUpperCase() || 'A'
 
   const handleLogout = () => {
     localStorage.removeItem('userId')
@@ -22,42 +24,37 @@ function Navbar() {
     navigate('/login')
   }
 
-  const navItems = userLoggedIn
-    ? [
-        { label: 'Home', path: '/home' },
-        { label: 'Categories', path: '/categories' },
-        { label: 'My Appointments', path: '/my-appointments' },
-      ]
-    : [
-        { label: 'Login', path: '/login' },
-        { label: 'Register', path: '/register' },
-      ]
-
   return (
-    <header className="navbar-shell">
-      <nav className="navbar" aria-label="Main navigation">
-        <NavLink to={userLoggedIn ? '/home' : '/login'} className="navbar-brand" end>
-          ONLINE APPOINTMENT SYSTEM
-        </NavLink>
+    <header className="navbar-shell app-navbar-shell">
+      <nav className="navbar app-navbar" aria-label="Main navigation">
+        <Link to={userLoggedIn ? '/home' : '/'} className="navbar-brand app-brand">
+          <img
+            className="navbar-brand-icon"
+            src="/app/appointment-icon.png"
+            alt=""
+            aria-hidden="true"
+            onError={(event) => {
+              event.currentTarget.hidden = true
+            }}
+          />
+          <span>Appointment</span>
+        </Link>
 
-        <div className="navbar-links">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path === '/home' || item.path === '/login'}
-              className={({ isActive }) =>
-                `nav-link${isActive ? ' active' : ''}`
-              }
-            >
-              {item.label}
-            </NavLink>
-          ))}
-
-          {userLoggedIn && (
-            <button type="button" className="nav-link nav-logout-btn" onClick={handleLogout}>
-              Logout
-            </button>
+        <div className="navbar-links app-header-actions">
+          {userLoggedIn ? (
+            <>
+              <Link to="/profile" className="header-profile-link" aria-label={`Profile for ${userName}`}>
+                <span className="header-profile-name">{userName}</span>
+                <span className="header-profile-avatar" aria-hidden="true">{userInitial}</span>
+              </Link>
+              <button type="button" className="header-signout" onClick={handleLogout}>
+                Sign out
+              </button>
+            </>
+          ) : (
+            <Link to="/login" className="header-login-link">
+              Sign in <span aria-hidden="true">→</span>
+            </Link>
           )}
         </div>
       </nav>

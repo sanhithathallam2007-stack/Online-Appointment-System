@@ -16,36 +16,24 @@ public class ProviderService {
         this.providerRepository = providerRepository;
     }
 
-    // Get all providers
     public List<Provider> getAllProviders() {
         return providerRepository.findAll();
     }
 
-    // Add provider
     public Provider addProvider(Provider provider) {
         return providerRepository.save(provider);
     }
 
-    // Get provider by ID
     public Provider getProviderById(Long id) {
-        return providerRepository
-                .findById(id)
-                .orElse(null);
+        return providerRepository.findById(id).orElse(null);
     }
 
-    // Provider login
-    public Optional<Provider> loginProvider(
-            String email,
-            String password) {
-
-        Optional<Provider> provider =
-                providerRepository.findByEmail(email);
+    public Optional<Provider> loginProvider(String email, String password) {
+        Optional<Provider> provider = providerRepository.findByEmail(email);
 
         if (provider.isPresent()
-                && provider.get()
-                        .getPassword()
-                        .equals(password)) {
-
+                && provider.get().getPassword() != null
+                && provider.get().getPassword().equals(password)) {
             return provider;
         }
 

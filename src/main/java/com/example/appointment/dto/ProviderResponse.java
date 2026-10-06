@@ -1,3 +1,4 @@
+
 package com.example.appointment.dto;
 
 import com.example.appointment.entity.Provider;
@@ -10,6 +11,7 @@ public class ProviderResponse {
     private String profession;
     private String organization;
     private Long categoryId;
+    private String specialization;
 
     public ProviderResponse(Provider provider) {
         this.id = provider.getId();
@@ -18,6 +20,7 @@ public class ProviderResponse {
         this.profession = provider.getProfession();
         this.organization = provider.getOrganization();
         this.categoryId = provider.getCategoryId();
+        this.specialization = provider.getSpecialization();
     }
 
     public Long getId() {
@@ -42,5 +45,9 @@ public class ProviderResponse {
 
     public Long getCategoryId() {
         return categoryId;
+    }
+
+    public String getSpecialization() {
+        return specialization;
     }
 }

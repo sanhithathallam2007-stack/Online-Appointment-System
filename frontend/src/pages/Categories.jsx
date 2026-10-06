@@ -47,14 +47,11 @@ function Categories() {
     'No description available.'
 
   return (
-    <main className="categories-page">
-      <section className="categories-header">
-        <span className="section-tag">Categories</span>
-        <h1>Find the right service for your needs</h1>
-        <p>
-          Explore trusted categories and connect with the right provider for your next
-          appointment.
-        </p>
+    <main className="categories-page categories-screen">
+      <section className="categories-header screen-heading">
+        <span className="eyebrow-label">EXPLORE</span>
+        <h1>What can we help with?</h1>
+        <p>Choose a service area to see the providers and availability.</p>
       </section>
 
       {loading && <div className="status-message">Loading categories...</div>}
@@ -68,7 +65,7 @@ function Categories() {
       {!loading && !error && categories.length > 0 && (
         <div className="categories-grid">
           {categories.map((category, index) => (
-            <article key={category.id || getCategoryName(category)} className="category-card">
+            <article key={category.id || getCategoryName(category)} className="category-card category-card-premium">
               <div className="category-icon" aria-hidden="true">
                 <span>{categoryIcons[index % categoryIcons.length]}</span>
               </div>
@@ -86,7 +83,7 @@ function Categories() {
                 }
                 className="category-button"
               >
-                View Providers
+                Explore <span aria-hidden="true">→</span>
               </Link>
             </article>
           ))}

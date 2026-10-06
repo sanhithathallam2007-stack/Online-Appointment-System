@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import API_BASE_URL from '../api'
+import PasswordInput from '../components/PasswordInput'
 
 function ProviderLogin() {
   const navigate = useNavigate()
@@ -25,7 +26,7 @@ function ProviderLogin() {
     setError('')
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/provider-auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/provider-login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -33,30 +34,43 @@ function ProviderLogin() {
         body: JSON.stringify(formData),
       })
 
-      const data = await response.json()
+      const responseText = await response.text()
+      let data = null
+      try {
+        data = JSON.parse(responseText)
+      } catch {
+        data = { message: responseText }
+      }
 
       if (!response.ok) {
         setError(data?.message || 'Invalid provider email or password.')
         return
       }
 
-      const providerData = {
-        id: data.id,
-        name: data.name,
-        email: data.email,
-        profession: data.profession || data.role || data.specialty || '',
-        organization: data.organization || data.company || data.hospital || '',
+      if (!data?.id || !data?.email) {
+        throw new Error('Invalid provider email or password.')
       }
 
-      localStorage.setItem('provider', JSON.stringify(providerData))
+      localStorage.removeItem('userId')
+      localStorage.removeItem('userName')
+      localStorage.removeItem('userEmail')
+      localStorage.removeItem('user')
+      localStorage.removeItem('token')
+      localStorage.removeItem('provider')
+      sessionStorage.removeItem('provider')
       localStorage.setItem('providerId', String(data.id))
-      localStorage.setItem('providerName', data.name)
+      localStorage.setItem('providerName', data.name || '')
       localStorage.setItem('providerEmail', data.email)
-      if (data.profession || data.role) {
-        localStorage.setItem('providerProfession', data.profession || data.role)
+      localStorage.setItem('providerRole', data.role || 'PROVIDER')
+      if (data.profession) {
+        localStorage.setItem('providerProfession', data.profession)
+      } else {
+        localStorage.removeItem('providerProfession')
       }
-      if (data.organization || data.company || data.hospital) {
-        localStorage.setItem('providerOrganization', data.organization || data.company || data.hospital)
+      if (data.organization) {
+        localStorage.setItem('providerOrganization', data.organization)
+      } else {
+        localStorage.removeItem('providerOrganization')
       }
 
       navigate('/provider-dashboard')
@@ -68,7 +82,7 @@ function ProviderLogin() {
   }
 
   return (
-    <main className="auth-page">
+    <main className="auth-page auth-screen">
       <div className="auth-card">
         <h1>Provider Login</h1>
 
@@ -88,9 +102,8 @@ function ProviderLogin() {
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input
+            <PasswordInput
               id="password"
-              type="password"
               name="password"
               value={formData.password}
               onChange={handleChange}

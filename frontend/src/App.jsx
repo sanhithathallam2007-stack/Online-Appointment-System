@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Navbar from './components/Navbar'
+import BottomNavigation from './components/BottomNavigation'
 import AiAssistant from './components/AiAssistant'
 import { AdminProtectedRoute, ProviderProtectedRoute, UserProtectedRoute } from './components/ProtectedRoute'
 import Home from './pages/Home'
@@ -30,6 +31,7 @@ import Providers from './pages/Providers'
 import ProviderDetails from './pages/ProviderDetails'
 import BookAppointment from './pages/BookAppointment'
 import MyAppointments from './pages/MyAppointments'
+import Profile from './pages/Profile'
 import RescheduleAppointment from './pages/RescheduleAppointment'
 import ProviderLogin from './pages/ProviderLogin'
 import ProviderDashboard from './pages/ProviderDashboard'
@@ -49,11 +51,11 @@ function App() {
     )
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/app">
       <Navbar />
 
       <Routes>
-        <Route path="/" element={isUserLoggedIn() ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />} />
+        <Route path="/" element={<Home />} />
         <Route path="/login" element={isUserLoggedIn() ? <Navigate to="/home" replace /> : <Login />} />
         <Route path="/register" element={isUserLoggedIn() ? <Navigate to="/home" replace /> : <Register />} />
 
@@ -84,6 +86,8 @@ function App() {
         <Route path="/providers/:id" element={<UserProtectedRoute><ProviderDetails /></UserProtectedRoute>} />
         <Route path="/book/:providerId" element={<UserProtectedRoute><BookAppointment /></UserProtectedRoute>} />
         <Route path="/my-appointments" element={<UserProtectedRoute><MyAppointments /></UserProtectedRoute>} />
+        <Route path="/bookings" element={<UserProtectedRoute><MyAppointments /></UserProtectedRoute>} />
+        <Route path="/profile" element={<UserProtectedRoute><Profile /></UserProtectedRoute>} />
         <Route path="/reschedule/:id" element={<UserProtectedRoute><RescheduleAppointment /></UserProtectedRoute>} />
 
         <Route path="/provider-login" element={<ProviderLogin />} />
@@ -146,11 +150,12 @@ function App() {
           }
         />
 
-        <Route path="/add-schedule" element={<AddSchedule />} />
+        <Route path="/add-schedule" element={<ProviderProtectedRoute><AddSchedule /></ProviderProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
 
       <AiAssistant />
+      <BottomNavigation />
     </BrowserRouter>
   )
 }

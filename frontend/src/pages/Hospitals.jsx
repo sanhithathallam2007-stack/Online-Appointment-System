@@ -56,6 +56,9 @@ function Hospitals() {
           <Link to="/categories" className="secondary-btn">
             Back to Categories
           </Link>
+          <Link to="/providers?categoryId=1" className="primary-btn">
+            View All Hospital Providers
+          </Link>
         </div>
       </section>
 

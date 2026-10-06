@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import API_BASE_URL from '../api'
+import ProviderWorkingHours from '../components/ProviderWorkingHours'
 
 const normalizeStatus = (value) => String(value || '').toUpperCase()
 
@@ -58,11 +59,12 @@ function ProviderDashboard() {
 
     try {
       const parsedValue = JSON.parse(rawValue)
+
       if (parsedValue && typeof parsedValue === 'object') {
         return parsedValue
       }
     } catch (err) {
-      // Ignore malformed provider data; the dashboard will rely on the fallback values.
+      // Ignore malformed provider data.
     }
 
     return null
@@ -70,13 +72,19 @@ function ProviderDashboard() {
 
   const storedProvider = getStoredProvider()
   const resolvedProvider = providerDetails || storedProvider || {}
-  const providerName = resolvedProvider.name || localStorage.getItem('providerName') || 'Provider'
-  const providerEmail = resolvedProvider.email || localStorage.getItem('providerEmail') || 'No email provided'
+
+  const providerName =
+    resolvedProvider.name || localStorage.getItem('providerName') || 'Provider'
+
+  const providerEmail =
+    resolvedProvider.email || localStorage.getItem('providerEmail') || 'No email provided'
+
   const providerProfession =
     resolvedProvider.profession ||
     resolvedProvider.role ||
     localStorage.getItem('providerProfession') ||
     'Profession not available'
+
   const providerOrganization =
     resolvedProvider.organization ||
     resolvedProvider.company ||
@@ -86,9 +94,11 @@ function ProviderDashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem('provider')
+    sessionStorage.removeItem('provider')
     localStorage.removeItem('providerId')
     localStorage.removeItem('providerName')
     localStorage.removeItem('providerEmail')
+    localStorage.removeItem('providerRole')
     localStorage.removeItem('providerProfession')
     localStorage.removeItem('providerOrganization')
 
@@ -101,18 +111,23 @@ function ProviderDashboard() {
   const [loadingSchedules, setLoadingSchedules] = useState(true)
   const [errorAppointments, setErrorAppointments] = useState('')
   const [errorSchedules, setErrorSchedules] = useState('')
-  const [filter, setFilter] = useState('All')
+  const [filter, setFilter] = useState('PENDING')
   const [successMessage, setSuccessMessage] = useState('')
   const [rejectingAppointmentId, setRejectingAppointmentId] = useState(null)
 
   const loadAppointments = async () => {
-    if (!providerId) return
+    if (!providerId) {
+      setLoadingAppointments(false)
+      return
+    }
 
     try {
       setLoadingAppointments(true)
       setErrorAppointments('')
 
-      const response = await fetch(`${API_BASE_URL}/api/appointments/provider/${providerId}`)
+      const response = await fetch(
+        `${API_BASE_URL}/api/appointments/provider/${providerId}`,
+      )
 
       if (!response.ok) {
         throw new Error('Unable to load appointments. Please try again.')
@@ -128,13 +143,18 @@ function ProviderDashboard() {
   }
 
   const loadSchedules = async () => {
-    if (!providerId) return
+    if (!providerId) {
+      setLoadingSchedules(false)
+      return
+    }
 
     try {
       setLoadingSchedules(true)
       setErrorSchedules('')
 
-      const response = await fetch(`${API_BASE_URL}/api/schedules/provider/${providerId}`)
+      const response = await fetch(
+        `${API_BASE_URL}/api/schedules/provider/${providerId}`,
+      )
 
       if (!response.ok) {
         throw new Error('Unable to load schedules. Please try again.')
@@ -151,13 +171,17 @@ function ProviderDashboard() {
 
   useEffect(() => {
     if (!providerId) {
+      setLoadingAppointments(false)
+      setLoadingSchedules(false)
       return
     }
 
     const needsProfileRefresh =
       !storedProvider ||
       (!storedProvider.profession && !storedProvider.role) ||
-      (!storedProvider.organization && !storedProvider.company && !storedProvider.hospital)
+      (!storedProvider.organization &&
+        !storedProvider.company &&
+        !storedProvider.hospital)
 
     if (needsProfileRefresh) {
       fetch(`${API_BASE_URL}/api/providers/${providerId}`)
@@ -174,7 +198,7 @@ function ProviderDashboard() {
           }
         })
         .catch(() => {
-          // Keep existing provider fallback values if the profile request fails.
+          // Keep existing provider fallback values.
         })
     }
 
@@ -204,16 +228,22 @@ function ProviderDashboard() {
 
   const handleStatusUpdate = async (appointmentId, action) => {
     if (action === 'reject') {
-      const confirmed = window.confirm('Are you sure you want to reject this appointment?')
+      const confirmed = window.confirm(
+        'Are you sure you want to reject this appointment?',
+      )
+
       if (!confirmed) {
         return
       }
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}/${action}`, {
-        method: 'PUT',
-      })
+      const response = await fetch(
+        `${API_BASE_URL}/api/appointments/${appointmentId}/${action}`,
+        {
+          method: 'PUT',
+        },
+      )
 
       const responseText = await response.text()
 
@@ -222,6 +252,7 @@ function ProviderDashboard() {
       }
 
       setRejectingAppointmentId(null)
+
       setSuccessMessage(
         action === 'approve'
           ? 'Appointment approved successfully.'
@@ -234,22 +265,36 @@ function ProviderDashboard() {
       await loadSchedules()
     } catch (err) {
       setSuccessMessage('')
-      setErrorAppointments(err.message || 'Unable to update appointment status.')
+      setErrorAppointments(
+        err.message || 'Unable to update appointment status.',
+      )
     }
   }
 
   const statusCounts = {
-    PENDING: appointments.filter((appointment) => normalizeStatus(appointment.status) === 'PENDING').length,
-    APPROVED: appointments.filter((appointment) => normalizeStatus(appointment.status) === 'APPROVED').length,
-    COMPLETED: appointments.filter((appointment) => normalizeStatus(appointment.status) === 'COMPLETED').length,
-    REJECTED: appointments.filter((appointment) => normalizeStatus(appointment.status) === 'REJECTED').length,
-    CANCELLED: appointments.filter((appointment) => normalizeStatus(appointment.status) === 'CANCELLED').length,
+    PENDING: appointments.filter(
+      (appointment) => normalizeStatus(appointment.status) === 'PENDING',
+    ).length,
+    APPROVED: appointments.filter(
+      (appointment) => normalizeStatus(appointment.status) === 'APPROVED',
+    ).length,
+    COMPLETED: appointments.filter(
+      (appointment) => normalizeStatus(appointment.status) === 'COMPLETED',
+    ).length,
+    REJECTED: appointments.filter(
+      (appointment) => normalizeStatus(appointment.status) === 'REJECTED',
+    ).length,
+    CANCELLED: appointments.filter(
+      (appointment) => normalizeStatus(appointment.status) === 'CANCELLED',
+    ).length,
   }
 
   const visibleAppointments =
     filter === 'All'
       ? appointments
-      : appointments.filter((appointment) => normalizeStatus(appointment.status) === filter)
+      : appointments.filter(
+          (appointment) => normalizeStatus(appointment.status) === filter,
+        )
 
   const appointmentGroups = [
     { key: 'PENDING', title: 'Pending Appointments' },
@@ -259,17 +304,31 @@ function ProviderDashboard() {
     { key: 'CANCELLED', title: 'Cancelled Appointments' },
   ]
 
-  const statusOrder = ['PENDING', 'APPROVED', 'COMPLETED', 'REJECTED', 'CANCELLED']
+  const statusOrder = [
+    'PENDING',
+    'APPROVED',
+    'COMPLETED',
+    'REJECTED',
+    'CANCELLED',
+  ]
 
   const filteredGroups =
     filter === 'All'
       ? appointmentGroups
-      : [{ key: filter, title: `${filter.charAt(0).toUpperCase()}${filter.slice(1).toLowerCase()} Appointments` }]
+      : [
+          {
+            key: filter,
+            title: `${filter.charAt(0).toUpperCase()}${filter.slice(1).toLowerCase()} Appointments`,
+          },
+        ]
 
   if (!providerId) {
     return (
       <main className="appointments-page">
-        <div className="status-message error">Please login as a provider.</div>
+        <div className="status-message error">
+          Please login as a provider.
+        </div>
+
         <div className="hero-actions">
           <Link to="/provider-login" className="primary-btn">
             Provider Login
@@ -294,148 +353,252 @@ function ProviderDashboard() {
           <div className="provider-avatar large" aria-hidden="true">
             {providerName.charAt(0).toUpperCase()}
           </div>
+
           <div>
             <h3>{providerName}</h3>
             <p>{providerEmail}</p>
-            <button type="button" className="secondary-btn" onClick={handleLogout} style={{ marginTop: '0.75rem' }}>
+
+            <button
+              type="button"
+              className="secondary-btn"
+              onClick={handleLogout}
+              style={{ marginTop: '0.75rem' }}
+            >
               Logout
             </button>
           </div>
         </div>
       </section>
 
-      <div className="summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+      <div
+        className="summary-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+          gap: '1rem',
+          marginBottom: '2rem',
+        }}
+      >
         {statusOrder.map((status) => (
-          <div key={status} className="appointment-card" style={{ minHeight: '110px' }}>
-            <h3>{status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}</h3>
-            <p style={{ fontSize: '2rem', fontWeight: 700, marginTop: '0.5rem' }}>{statusCounts[status] || 0}</p>
+          <div
+            key={status}
+            className="appointment-card"
+            style={{ minHeight: '110px' }}
+          >
+            <h3>
+              {status.charAt(0) + status.slice(1).toLowerCase()}
+            </h3>
+
+            <p
+              style={{
+                fontSize: '2rem',
+                fontWeight: 700,
+                marginTop: '0.5rem',
+              }}
+            >
+              {statusCounts[status] || 0}
+            </p>
           </div>
         ))}
       </div>
 
-      <div className="filter-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '2rem' }}>
-        {['All', 'PENDING', 'APPROVED', 'COMPLETED', 'REJECTED', 'CANCELLED'].map((option) => (
-          <button
-            key={option}
-            type="button"
-            className={filter === option ? 'primary-btn' : 'secondary-btn'}
-            onClick={() => setFilter(option)}
-          >
-            {option}
-          </button>
-        ))}
+      <div
+        className="filter-row"
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '0.75rem',
+          marginBottom: '2rem',
+        }}
+      >
+        {['All', 'PENDING', 'APPROVED', 'COMPLETED', 'REJECTED', 'CANCELLED'].map(
+          (option) => (
+            <button
+              key={option}
+              type="button"
+              className={
+                filter === option ? 'primary-btn' : 'secondary-btn'
+              }
+              onClick={() => setFilter(option)}
+            >
+              {option}
+            </button>
+          ),
+        )}
       </div>
 
-      {successMessage && <div className="status-message success">{successMessage}</div>}
+      {successMessage && (
+        <div className="status-message success">{successMessage}</div>
+      )}
 
-      {loadingAppointments && <div className="status-message">Loading appointments...</div>}
+      {loadingAppointments && (
+        <div className="status-message">Loading appointments...</div>
+      )}
 
       {!loadingAppointments && errorAppointments && (
         <div className="status-message error">
           {errorAppointments}
+
           <div className="hero-actions">
-            <button type="button" className="secondary-btn" onClick={loadAppointments}>
+            <button
+              type="button"
+              className="secondary-btn"
+              onClick={loadAppointments}
+            >
               Retry
             </button>
           </div>
         </div>
       )}
 
-      {!loadingAppointments && !errorAppointments && visibleAppointments.length === 0 && (
-        <div className="status-message">No appointments found for this filter.</div>
-      )}
+      {!loadingAppointments &&
+        !errorAppointments &&
+        visibleAppointments.length === 0 && (
+          <div className="status-message">
+            No appointments found for this filter.
+          </div>
+        )}
 
-      {!loadingAppointments && !errorAppointments && visibleAppointments.length > 0 && (
-        <>
-          {filteredGroups.map((group) => {
-            const groupItems = visibleAppointments.filter(
-              (appointment) => normalizeStatus(appointment.status) === group.key,
-            )
+      {!loadingAppointments &&
+        !errorAppointments &&
+        visibleAppointments.length > 0 && (
+          <>
+            {filteredGroups.map((group) => {
+              const groupItems = visibleAppointments.filter(
+                (appointment) =>
+                  normalizeStatus(appointment.status) === group.key,
+              )
 
-            if (!groupItems.length) {
-              return null
-            }
+              if (!groupItems.length) {
+                return null
+              }
 
-            return (
-              <section key={group.key} style={{ marginBottom: '2rem' }}>
-                <h2>{group.title}</h2>
-                <div className="appointments-grid">
-                  {groupItems.map((appointment) => {
-                    const user = appointment.user || {}
-                    const status = normalizeStatus(appointment.status)
+              return (
+                <section
+                  key={group.key}
+                  style={{ marginBottom: '2rem' }}
+                >
+                  <h2>{group.title}</h2>
 
-                    return (
-                      <article key={appointment.id} className="appointment-card">
-                        <div className="appointment-header">
-                          <div>
-                            <h3>{user.name || 'Customer'}</h3>
-                            <p>{user.email || 'No email provided'}</p>
-                          </div>
-                          <span className={`status-badge ${status.toLowerCase()}`}>{status}</span>
-                        </div>
+                  <div className="appointments-grid">
+                    {groupItems.map((appointment) => {
+                      const user = appointment.user || {}
+                      const status = normalizeStatus(appointment.status)
 
-                        <div className="appointment-details">
-                          <p>
-                            <strong>Date:</strong> {formatDisplayDate(appointment.appointmentDate)}
-                          </p>
-                          <p>
-                            <strong>Time:</strong> {formatDisplayTime(appointment.appointmentTime)}
-                          </p>
-                          <p>
-                            <strong>Status:</strong> {status}
-                          </p>
-                        </div>
+                      return (
+                        <article
+                          key={appointment.id}
+                          className="appointment-card"
+                        >
+                          <div className="appointment-header">
+                            <div>
+                              <h3>{user.name || 'Customer'}</h3>
+                              <p>{user.email || 'No email provided'}</p>
+                            </div>
 
-                        {status === 'PENDING' && (
-                          <div className="appointment-actions">
-                            <button
-                              type="button"
-                              className="primary-btn"
-                              onClick={() => handleStatusUpdate(appointment.id, 'approve')}
+                            <span
+                              className={`status-badge ${status.toLowerCase()}`}
                             >
-                              Approve
-                            </button>
-                            <button
-                              type="button"
-                              className="secondary-btn"
-                              onClick={() => setRejectingAppointmentId(appointment.id)}
-                            >
-                              Reject
-                            </button>
+                              {status}
+                            </span>
                           </div>
-                        )}
 
-                        {status === 'APPROVED' && (
-                          <div className="appointment-actions">
-                            <button
-                              type="button"
-                              className="primary-btn"
-                              onClick={() => handleStatusUpdate(appointment.id, 'complete')}
-                            >
-                              Mark Completed
-                            </button>
+                          <div className="appointment-details">
+                            <p>
+                              <strong>Date:</strong>{' '}
+                              {formatDisplayDate(
+                                appointment.appointmentDate,
+                              )}
+                            </p>
+
+                            <p>
+                              <strong>Time:</strong>{' '}
+                              {formatDisplayTime(
+                                appointment.appointmentTime,
+                              )}
+                            </p>
+
+                            <p>
+                              <strong>Status:</strong> {status}
+                            </p>
                           </div>
-                        )}
-                      </article>
-                    )
-                  })}
-                </div>
-              </section>
-            )
-          })}
-        </>
-      )}
+
+                          {status === 'PENDING' && (
+                            <div className="appointment-actions">
+                              <button
+                                type="button"
+                                className="primary-btn"
+                                onClick={() =>
+                                  handleStatusUpdate(
+                                    appointment.id,
+                                    'approve',
+                                  )
+                                }
+                              >
+                                Approve
+                              </button>
+
+                              <button
+                                type="button"
+                                className="secondary-btn"
+                                onClick={() =>
+                                  setRejectingAppointmentId(appointment.id)
+                                }
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          )}
+
+                          {status === 'APPROVED' && (
+                            <div className="appointment-actions">
+                              <button
+                                type="button"
+                                className="primary-btn"
+                                onClick={() =>
+                                  handleStatusUpdate(
+                                    appointment.id,
+                                    'complete',
+                                  )
+                                }
+                              >
+                                Mark Completed
+                              </button>
+                            </div>
+                          )}
+                        </article>
+                      )
+                    })}
+                  </div>
+                </section>
+              )
+            })}
+          </>
+        )}
+
+      {/* Provider working-hours form */}
+      <ProviderWorkingHours
+        providerId={providerId}
+        onSaved={loadSchedules}
+      />
 
       <section className="booking-section" style={{ marginTop: '2rem' }}>
         <h2>Manage Available Slots</h2>
 
-        {loadingSchedules && <div className="status-message">Loading schedules...</div>}
+        {loadingSchedules && (
+          <div className="status-message">Loading schedules...</div>
+        )}
 
         {!loadingSchedules && errorSchedules && (
           <div className="status-message error">
             {errorSchedules}
+
             <div className="hero-actions">
-              <button type="button" className="secondary-btn" onClick={loadSchedules}>
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={loadSchedules}
+              >
                 Retry
               </button>
             </div>
@@ -444,33 +607,65 @@ function ProviderDashboard() {
 
         {!loadingSchedules && !errorSchedules && (
           <>
-            <div className="appointment-actions" style={{ marginBottom: '1.5rem' }}>
+            <div
+              className="appointment-actions"
+              style={{ marginBottom: '1.5rem' }}
+            >
               <Link to="/add-schedule" className="primary-btn">
                 Add New Slot
               </Link>
             </div>
 
             {schedules.length === 0 ? (
-              <div className="status-message">No schedules available.</div>
+              <div className="status-message">
+                No schedules available.
+              </div>
             ) : (
               <div className="appointments-grid">
                 {schedules.map((schedule) => (
-                  <article key={schedule.id ?? schedule.scheduleId} className="appointment-card">
+                  <article
+                    key={schedule.id ?? schedule.scheduleId}
+                    className="appointment-card"
+                  >
                     <div className="appointment-header">
                       <div>
-                        <h3>{formatDisplayDate(schedule.appointmentDate || schedule.date || schedule.scheduleDate)}</h3>
+                        <h3>
+                          {formatDisplayDate(
+                            schedule.appointmentDate ||
+                              schedule.date ||
+                              schedule.scheduleDate,
+                          )}
+                        </h3>
                       </div>
-                      <span className={`status-badge ${schedule.available === true ? 'available' : 'booked'}`}>
-                        {schedule.available === true ? 'Available' : 'Booked'}
+
+                      <span
+                        className={`status-badge ${
+                          schedule.available === true
+                            ? 'available'
+                            : 'booked'
+                        }`}
+                      >
+                        {schedule.available === true
+                          ? 'Available'
+                          : 'Booked'}
                       </span>
                     </div>
 
                     <div className="appointment-details">
                       <p>
-                        <strong>Time:</strong> {formatDisplayTime(schedule.appointmentTime || schedule.time || schedule.scheduleTime)}
+                        <strong>Time:</strong>{' '}
+                        {formatDisplayTime(
+                          schedule.appointmentTime ||
+                            schedule.time ||
+                            schedule.scheduleTime,
+                        )}
                       </p>
+
                       <p>
-                        <strong>Status:</strong> {schedule.available === true ? 'Available' : 'Booked'}
+                        <strong>Status:</strong>{' '}
+                        {schedule.available === true
+                          ? 'Available'
+                          : 'Booked'}
                       </p>
                     </div>
                   </article>
@@ -482,9 +677,16 @@ function ProviderDashboard() {
       </section>
 
       {rejectingAppointmentId && (
-        <div className="status-message error" style={{ marginTop: '1.5rem' }}>
+        <div
+          className="status-message error"
+          style={{ marginTop: '1.5rem' }}
+        >
           <div>Are you sure you want to reject this appointment?</div>
-          <div className="appointment-actions" style={{ marginTop: '1rem' }}>
+
+          <div
+            className="appointment-actions"
+            style={{ marginTop: '1rem' }}
+          >
             <button
               type="button"
               className="primary-btn"
@@ -494,6 +696,7 @@ function ProviderDashboard() {
             >
               Reject Appointment
             </button>
+
             <button
               type="button"
               className="secondary-btn"

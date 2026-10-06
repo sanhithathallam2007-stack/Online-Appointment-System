@@ -1,19 +1,24 @@
+
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import API_BASE_URL from '../api'
+import PasswordInput from '../components/PasswordInput'
 
 function Login() {
   const navigate = useNavigate()
+  const [loginType, setLoginType] = useState('user')
 
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   })
+
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleChange = (event) => {
     const { name, value } = event.target
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -38,7 +43,12 @@ function Login() {
     setError('')
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      const isProviderLogin = loginType === 'provider'
+      const endpoint = isProviderLogin
+        ? '/api/auth/provider-login'
+        : '/api/auth/login'
+
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -55,15 +65,53 @@ function Login() {
         throw new Error('Invalid email or password')
       }
 
-      localStorage.setItem('userId', String(data.id))
-      localStorage.setItem('userName', data.name || '')
-      localStorage.setItem('userEmail', data.email)
+      if (isProviderLogin) {
+        localStorage.removeItem('userId')
+        localStorage.removeItem('userName')
+        localStorage.removeItem('userEmail')
+        localStorage.removeItem('user')
+        localStorage.removeItem('token')
+        localStorage.removeItem('provider')
+        sessionStorage.removeItem('provider')
+
+        localStorage.setItem('providerId', String(data.id))
+        localStorage.setItem('providerName', data.name || '')
+        localStorage.setItem('providerEmail', data.email)
+        localStorage.setItem('providerRole', data.role || 'PROVIDER')
+
+        if (data.profession) {
+          localStorage.setItem('providerProfession', data.profession)
+        } else {
+          localStorage.removeItem('providerProfession')
+        }
+
+        if (data.organization) {
+          localStorage.setItem('providerOrganization', data.organization)
+        } else {
+          localStorage.removeItem('providerOrganization')
+        }
+      } else {
+        localStorage.removeItem('providerId')
+        localStorage.removeItem('providerName')
+        localStorage.removeItem('providerEmail')
+        localStorage.removeItem('providerRole')
+        localStorage.removeItem('providerProfession')
+        localStorage.removeItem('providerOrganization')
+        localStorage.removeItem('provider')
+        sessionStorage.removeItem('provider')
+
+        localStorage.setItem('userId', String(data.id))
+        localStorage.setItem('userName', data.name || '')
+        localStorage.setItem('userEmail', data.email)
+      }
 
       setFormData({ email: '', password: '' })
-      navigate('/categories')
+      navigate(isProviderLogin ? '/provider-dashboard' : '/categories')
     } catch (err) {
       if (err instanceof TypeError) {
-        setError('Unable to connect to the server. Please make sure Spring Boot is running.')
+        setError(
+          'Unable to connect to the server. Please make sure Spring Boot is running.',
+        )
       } else {
         setError('Invalid email or password')
       }
@@ -73,11 +121,44 @@ function Login() {
   }
 
   return (
-    <main className="auth-page">
-      <section className="auth-card">
-        <div className="auth-header">
-          <span className="section-tag">Welcome Back</span>
-          <h1>Login</h1>
+    <main className="auth-page auth-screen login-page">
+      <section className="auth-card login-card">
+        <div className="auth-header login-header">
+          <span className="eyebrow-label">WELCOME BACK</span>
+
+          <h1>{loginType === 'provider' ? 'Provider Login' : 'User Login'}</h1>
+
+          <p>
+            {loginType === 'provider'
+              ? 'Sign in to manage your appointments and available slots.'
+              : 'Sign in to find and manage your appointments.'}
+          </p>
+        </div>
+
+        <div
+          className="appointment-actions login-type-actions"
+          role="group"
+          aria-label="Login type"
+        >
+          <button
+            type="button"
+            className={loginType === 'user' ? 'primary-btn' : 'secondary-btn'}
+            aria-pressed={loginType === 'user'}
+            onClick={() => setLoginType('user')}
+          >
+            User Login
+          </button>
+
+          <button
+            type="button"
+            className={
+              loginType === 'provider' ? 'primary-btn' : 'secondary-btn'
+            }
+            aria-pressed={loginType === 'provider'}
+            onClick={() => setLoginType('provider')}
+          >
+            Provider Login
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
@@ -95,19 +176,26 @@ function Login() {
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               value={formData.password}
               onChange={handleChange}
               placeholder="Enter your password"
             />
           </div>
 
-          {error && <div className="status-message error">{error}</div>}
+          {error && (
+            <div className="status-message error">
+              {error}
+            </div>
+          )}
 
-          <button type="submit" className="primary-btn auth-submit" disabled={isSubmitting}>
+          <button
+            type="submit"
+            className="primary-btn auth-submit"
+            disabled={isSubmitting}
+          >
             {isSubmitting ? 'Logging in...' : 'Login'}
           </button>
         </form>

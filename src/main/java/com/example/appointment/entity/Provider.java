@@ -1,3 +1,4 @@
+
 package com.example.appointment.entity;
 
 import jakarta.persistence.Entity;
@@ -26,9 +27,12 @@ public class Provider {
 
     private Long categoryId;
 
+    private String specialization;
+
     public Provider() {
     }
 
+    // Existing constructor — kept for compatibility
     public Provider(String name, String email, String password,
                     String profession, String organization, Long categoryId) {
         this.name = name;
@@ -37,6 +41,19 @@ public class Provider {
         this.profession = profession;
         this.organization = organization;
         this.categoryId = categoryId;
+    }
+
+    // New constructor with specialization
+    public Provider(String name, String email, String password,
+                    String profession, String organization, Long categoryId,
+                    String specialization) {
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.profession = profession;
+        this.organization = organization;
+        this.categoryId = categoryId;
+        this.specialization = specialization;
     }
 
     public Long getId() {
@@ -94,4 +111,12 @@ public class Provider {
     public void setCategoryId(Long categoryId) {
         this.categoryId = categoryId;
     }
-}   
+
+    public String getSpecialization() {
+        return specialization;
+    }
+
+    public void setSpecialization(String specialization) {
+        this.specialization = specialization;
+    }
+}

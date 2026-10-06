@@ -1,20 +1,5 @@
 import { Navigate } from 'react-router-dom'
 
-const getStoredProvider = () => {
-  const rawProvider = localStorage.getItem('provider')
-
-  if (!rawProvider) {
-    return null
-  }
-
-  try {
-    const parsedProvider = JSON.parse(rawProvider)
-    return parsedProvider && typeof parsedProvider === 'object' ? parsedProvider : null
-  } catch (err) {
-    return null
-  }
-}
-
 const getStoredAdmin = () => {
   const rawAdmin = localStorage.getItem('admin')
 
@@ -48,9 +33,10 @@ export function UserProtectedRoute({ children }) {
 }
 
 export function ProviderProtectedRoute({ children }) {
-  const provider = getStoredProvider()
+  const providerId = localStorage.getItem('providerId')
+  const providerRole = localStorage.getItem('providerRole')
 
-  if (!provider || (!provider.id && !provider.email && !provider.name)) {
+  if (!providerId || providerRole !== 'PROVIDER') {
     return <Navigate to="/provider-login" replace />
   }
 

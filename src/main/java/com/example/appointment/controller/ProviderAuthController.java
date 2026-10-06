@@ -10,7 +10,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/provider-auth")
-@CrossOrigin
 public class ProviderAuthController {
 
     private final ProviderService providerService;

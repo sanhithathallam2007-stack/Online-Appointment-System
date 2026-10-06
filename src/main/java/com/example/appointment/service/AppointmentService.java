@@ -9,10 +9,14 @@ import com.example.appointment.repository.AppointmentRepository;
 import com.example.appointment.repository.ProviderRepository;
 import com.example.appointment.repository.ScheduleRepository;
 import com.example.appointment.repository.UserRepository;
+import com.example.appointment.util.AppointmentTimeNormalizer;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -41,16 +45,17 @@ public class AppointmentService {
         this.notificationService = notificationService;
     }
 
+    @Transactional
     public Appointment bookAppointment(
             Long userId,
             Long providerId,
             Long scheduleId) {
 
+        Provider provider =
+            providerRepository.findByIdForUpdate(providerId).orElse(null);
+
         User user =
                 userRepository.findById(userId).orElse(null);
-
-        Provider provider =
-                providerRepository.findById(providerId).orElse(null);
 
         Schedule schedule =
                 scheduleRepository.findById(scheduleId).orElse(null);
@@ -92,6 +97,10 @@ public class AppointmentService {
             return null;
         }
 
+        if (!providerId.equals(schedule.getProviderId())) {
+            return null;
+        }
+
         if (schedule.isAvailable() == null || !schedule.isAvailable()) {
 
             return null;
@@ -102,7 +111,24 @@ public class AppointmentService {
             return null;
         }
 
-        if (isProviderUnavailableOnDate(providerId, LocalDate.parse(schedule.getAppointmentDate()))) {
+        LocalDate appointmentDate = LocalDate.parse(schedule.getAppointmentDate());
+        LocalTime appointmentTime = AppointmentTimeNormalizer.parse(schedule.getAppointmentTime());
+
+        if (isProviderUnavailableOnDate(providerId, appointmentDate)) {
+            return null;
+        }
+
+        List<Appointment> activeAppointments = appointmentRepository
+                .findByProvider_IdAndAppointmentDateAndAppointmentTimeAndStatusIn(
+                        providerId,
+                        appointmentDate,
+                        appointmentTime,
+                        List.of("PENDING", "APPROVED"));
+        if (!activeAppointments.isEmpty()) {
+            return null;
+        }
+
+        if (scheduleRepository.claimAvailableSlot(scheduleId, providerId) != 1) {
             return null;
         }
 
@@ -111,25 +137,10 @@ public class AppointmentService {
         appointment.setUser(user);
         appointment.setProvider(provider);
 
-        appointment.setAppointmentDate(
-                LocalDate.parse(
-                        schedule.getAppointmentDate()
-                )
-        );
-
-        appointment.setAppointmentTime(
-                LocalTime.parse(
-                        convertTime(
-                                schedule.getAppointmentTime()
-                        )
-                )
-        );
+        appointment.setAppointmentDate(appointmentDate);
+        appointment.setAppointmentTime(appointmentTime);
 
         appointment.setStatus("PENDING");
-
-        schedule.setAvailable(false);
-
-        scheduleRepository.save(schedule);
 
         Appointment savedAppointment = appointmentRepository.save(appointment);
 
@@ -194,7 +205,7 @@ public class AppointmentService {
         }
 
         LocalDate scheduleDate = LocalDate.parse(schedule.getAppointmentDate());
-        LocalTime scheduleTime = LocalTime.parse(convertTime(schedule.getAppointmentTime()));
+        LocalTime scheduleTime = AppointmentTimeNormalizer.parse(schedule.getAppointmentTime());
 
         LocalDate today = LocalDate.now();
         LocalTime now = LocalTime.now();
@@ -206,6 +217,7 @@ public class AppointmentService {
         return scheduleDate.isEqual(today) && scheduleTime.isBefore(now);
     }
 
+    @Transactional
     public boolean cancelAppointment(Long id) {
 
         Appointment appointment =
@@ -214,6 +226,10 @@ public class AppointmentService {
                         .orElse(null);
 
         if (appointment == null) {
+            return false;
+        }
+
+        if (!lockProviderForAppointment(appointment)) {
             return false;
         }
 
@@ -227,13 +243,13 @@ public class AppointmentService {
 
         appointment.setStatus("CANCELLED");
 
-        makeSlotAvailable(appointment);
-
         appointmentRepository.save(appointment);
+        makeSlotAvailable(appointment);
 
         return true;
     }
 
+    @Transactional
     public boolean approveAppointment(Long id) {
 
         Appointment appointment =
@@ -242,6 +258,10 @@ public class AppointmentService {
                         .orElse(null);
 
         if (appointment == null) {
+            return false;
+        }
+
+        if (!lockProviderForAppointment(appointment)) {
             return false;
         }
 
@@ -256,6 +276,7 @@ public class AppointmentService {
         return true;
     }
 
+    @Transactional
     public boolean rejectAppointment(Long id) {
 
         Appointment appointment =
@@ -267,19 +288,23 @@ public class AppointmentService {
             return false;
         }
 
+        if (!lockProviderForAppointment(appointment)) {
+            return false;
+        }
+
         if (!appointment.getStatus().equals("PENDING")) {
             return false;
         }
 
         appointment.setStatus("REJECTED");
 
-        makeSlotAvailable(appointment);
-
         appointmentRepository.save(appointment);
+        makeSlotAvailable(appointment);
 
         return true;
     }
 
+    @Transactional
     public boolean rescheduleAppointment(
             Long appointmentId,
             Long newScheduleId) {
@@ -289,14 +314,22 @@ public class AppointmentService {
                         .findById(appointmentId)
                         .orElse(null);
 
+        if (appointment == null || appointment.getProvider() == null) {
+
+            return false;
+        }
+
+        Long providerId = appointment.getProvider().getId();
+        if (providerRepository.findByIdForUpdate(providerId).isEmpty()) {
+            return false;
+        }
+
         Schedule newSchedule =
                 scheduleRepository
                         .findById(newScheduleId)
                         .orElse(null);
 
-        if (appointment == null ||
-            newSchedule == null) {
-
+        if (newSchedule == null || !providerId.equals(newSchedule.getProviderId())) {
             return false;
         }
 
@@ -306,36 +339,40 @@ public class AppointmentService {
             return false;
         }
 
-        if (!newSchedule.isAvailable()) {
+        if (!Boolean.TRUE.equals(newSchedule.isAvailable()) || isScheduleExpired(newSchedule)) {
 
             return false;
         }
 
+        LocalDate newDate = LocalDate.parse(newSchedule.getAppointmentDate());
+        LocalTime newTime = AppointmentTimeNormalizer.parse(newSchedule.getAppointmentTime());
+        if (newDate.equals(appointment.getAppointmentDate()) &&
+            newTime.equals(appointment.getAppointmentTime())) {
+            return false;
+        }
+
         if (calendarService.isRestrictedForCategory(
-                LocalDate.parse(newSchedule.getAppointmentDate()),
+            newDate,
                 appointment.getProvider().getCategoryId())) {
+            return false;
+        }
+
+        List<Appointment> conflictingAppointments = appointmentRepository
+            .findByProvider_IdAndAppointmentDateAndAppointmentTimeAndIdNotAndStatusIn(
+                providerId,
+                newDate,
+                newTime,
+                appointmentId,
+                List.of("PENDING", "APPROVED"));
+        if (!conflictingAppointments.isEmpty() ||
+            scheduleRepository.claimAvailableSlot(newScheduleId, providerId) != 1) {
             return false;
         }
 
         makeSlotAvailable(appointment);
 
-        appointment.setAppointmentDate(
-                LocalDate.parse(
-                        newSchedule.getAppointmentDate()
-                )
-        );
-
-        appointment.setAppointmentTime(
-                LocalTime.parse(
-                        convertTime(
-                                newSchedule.getAppointmentTime()
-                        )
-                )
-        );
-
-        newSchedule.setAvailable(false);
-
-        scheduleRepository.save(newSchedule);
+        appointment.setAppointmentDate(newDate);
+        appointment.setAppointmentTime(newTime);
 
         appointment.setStatus("PENDING");
 
@@ -344,6 +381,7 @@ public class AppointmentService {
         return true;
     }
 
+    @Transactional
     public boolean completeAppointment(Long id) {
 
         Appointment appointment =
@@ -378,33 +416,49 @@ public class AppointmentService {
                         appointment.getProvider().getId()
                 );
 
+        List<Appointment> activeAppointments = appointmentRepository
+            .findByProvider_IdAndAppointmentDateAndAppointmentTimeAndIdNotAndStatusIn(
+                appointment.getProvider().getId(),
+                appointment.getAppointmentDate(),
+                appointment.getAppointmentTime(),
+                appointment.getId(),
+                List.of("PENDING", "APPROVED"));
+        if (!activeAppointments.isEmpty()) {
+            return;
+        }
+
+        List<Schedule> matchingSchedules = new ArrayList<>();
         for (Schedule schedule : schedules) {
+            if (schedule.getAppointmentDate() == null || schedule.getAppointmentTime() == null) {
+                continue;
+            }
 
-            LocalDate scheduleDate =
-                    LocalDate.parse(
-                            schedule.getAppointmentDate()
-                    );
-
-            LocalTime scheduleTime =
-                    LocalTime.parse(
-                            convertTime(
-                                    schedule.getAppointmentTime()
-                            )
-                    );
-
-            if (scheduleDate.equals(
-                        appointment.getAppointmentDate())
-                    &&
-                scheduleTime.equals(
-                        appointment.getAppointmentTime())) {
-
-                schedule.setAvailable(true);
-
-                scheduleRepository.save(schedule);
-
-                break;
+            LocalDate scheduleDate = LocalDate.parse(schedule.getAppointmentDate());
+            LocalTime scheduleTime = AppointmentTimeNormalizer.parse(schedule.getAppointmentTime());
+            if (scheduleDate.equals(appointment.getAppointmentDate()) &&
+                    scheduleTime.equals(appointment.getAppointmentTime())) {
+                matchingSchedules.add(schedule);
             }
         }
+
+        matchingSchedules.sort(Comparator.comparing(Schedule::getId));
+        if (matchingSchedules.stream().anyMatch(schedule -> Boolean.TRUE.equals(schedule.isAvailable()))) {
+            return;
+        }
+
+        if (!matchingSchedules.isEmpty()) {
+            Schedule slotToReopen = matchingSchedules.get(0);
+            slotToReopen.setAvailable(true);
+            scheduleRepository.save(slotToReopen);
+        }
+    }
+
+    private boolean lockProviderForAppointment(Appointment appointment) {
+        if (appointment.getProvider() == null) {
+            return true;
+        }
+
+        return providerRepository.findByIdForUpdate(appointment.getProvider().getId()).isPresent();
     }
 
     private String formatNotificationTime(LocalTime time) {
@@ -423,45 +477,4 @@ public class AppointmentService {
         return String.format("%d:%02d %s", displayHour, minute, period);
     }
 
-    private String convertTime(String time) {
-
-        if (time.contains("AM") ||
-            time.contains("PM")) {
-
-            String[] parts =
-                    time.split(" ");
-
-            String[] hm =
-                    parts[0].split(":");
-
-            int hour =
-                    Integer.parseInt(hm[0]);
-
-            int minute =
-                    Integer.parseInt(hm[1]);
-
-            String amPm =
-                    parts[1];
-
-            if (amPm.equalsIgnoreCase("PM")
-                    && hour != 12) {
-
-                hour += 12;
-            }
-
-            if (amPm.equalsIgnoreCase("AM")
-                    && hour == 12) {
-
-                hour = 0;
-            }
-
-            return String.format(
-                    "%02d:%02d",
-                    hour,
-                    minute
-            );
-        }
-
-        return time;
-    }
 }

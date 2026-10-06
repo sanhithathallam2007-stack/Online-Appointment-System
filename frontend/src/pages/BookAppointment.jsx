@@ -1,40 +1,31 @@
+
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import API_BASE_URL from '../api'
 
 const parseTimeToMinutes = (value) => {
-  if (value === null || value === undefined || value === '') {
-    return null
-  }
+  if (value === null || value === undefined || value === '') return null
 
   const text = String(value).trim()
-
-  if (!text) {
-    return null
-  }
+  if (!text) return null
 
   const twelveHourMatch = text.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i)
+
   if (twelveHourMatch) {
     let hour = Number(twelveHourMatch[1])
     const minute = Number(twelveHourMatch[2])
     const amPm = (twelveHourMatch[3] || '').toUpperCase()
 
-    if (amPm === 'PM' && hour !== 12) {
-      hour += 12
-    }
-
-    if (amPm === 'AM' && hour === 12) {
-      hour = 0
-    }
+    if (amPm === 'PM' && hour !== 12) hour += 12
+    if (amPm === 'AM' && hour === 12) hour = 0
 
     return hour * 60 + minute
   }
 
   const twentyFourHourMatch = text.match(/^(\d{1,2}):(\d{2})$/)
+
   if (twentyFourHourMatch) {
-    const hour = Number(twentyFourHourMatch[1])
-    const minute = Number(twentyFourHourMatch[2])
-    return hour * 60 + minute
+    return Number(twentyFourHourMatch[1]) * 60 + Number(twentyFourHourMatch[2])
   }
 
   return null
@@ -47,9 +38,7 @@ const getScheduleTime = (slot) =>
   slot?.appointmentTime || slot?.time || slot?.scheduleTime || 'Not specified'
 
 const sortSlots = (slots) => {
-  const sorted = [...slots]
-
-  return sorted.sort((firstSlot, secondSlot) => {
+  return [...slots].sort((firstSlot, secondSlot) => {
     const firstDate = getScheduleDate(firstSlot)
     const secondDate = getScheduleDate(secondSlot)
 
@@ -68,34 +57,20 @@ const isFutureSlot = (slot, now = new Date()) => {
   const dateString = getScheduleDate(slot)
   const timeString = getScheduleTime(slot)
 
-  if (!dateString || dateString === 'Not specified') {
-    return false
-  }
+  if (!dateString || dateString === 'Not specified') return false
 
   const dateOnly = new Date(`${dateString}T00:00:00`)
-
-  if (Number.isNaN(dateOnly.getTime())) {
-    return false
-  }
+  if (Number.isNaN(dateOnly.getTime())) return false
 
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
-  if (dateOnly.getTime() < todayStart.getTime()) {
-    return false
-  }
-
-  if (dateOnly.getTime() > todayStart.getTime()) {
-    return true
-  }
+  if (dateOnly.getTime() < todayStart.getTime()) return false
+  if (dateOnly.getTime() > todayStart.getTime()) return true
 
   const currentMinutes = now.getHours() * 60 + now.getMinutes()
   const scheduleMinutes = parseTimeToMinutes(timeString)
 
-  if (scheduleMinutes === null) {
-    return false
-  }
-
-  return scheduleMinutes > currentMinutes
+  return scheduleMinutes !== null && scheduleMinutes > currentMinutes
 }
 
 const filterFutureSlots = (slots, now = new Date()) =>
@@ -126,18 +101,16 @@ function BookAppointment() {
       setScheduleLoading(true)
       setScheduleError('')
 
-      const response = await fetch(`${API_BASE_URL}/api/schedules/provider/${providerId}`)
+      const response = await fetch(
+        `${API_BASE_URL}/api/schedules/provider/${providerId}`,
+      )
 
       if (!response.ok) {
         throw new Error('Unable to load available slots.')
       }
 
       const data = await response.json()
-      const availableSlots = Array.isArray(data)
-        ? data.filter((slot) => slot.available === true)
-        : []
-
-      setSchedules(filterFutureSlots(availableSlots, new Date()))
+      setSchedules(filterFutureSlots(data, new Date()))
     } catch (err) {
       setScheduleError(err.message || 'Unable to load available slots.')
     } finally {
@@ -153,7 +126,9 @@ function BookAppointment() {
         setProviderLoading(true)
         setProviderError('')
 
-        const response = await fetch(`${API_BASE_URL}/api/providers/${providerId}`)
+        const response = await fetch(
+          `${API_BASE_URL}/api/providers/${providerId}`,
+        )
 
         if (!response.ok) {
           throw new Error('Unable to load provider details.')
@@ -172,7 +147,7 @@ function BookAppointment() {
     loadSchedules()
 
     const expirationCheckTimer = window.setInterval(() => {
-      setSchedules((currentSchedules) => filterFutureSlots(currentSchedules, new Date()))
+      setSchedules((current) => filterFutureSlots(current, new Date()))
     }, 30000)
 
     const backendRefreshTimer = window.setInterval(() => {
@@ -186,7 +161,13 @@ function BookAppointment() {
   }, [providerId])
 
   useEffect(() => {
-    if (selectedScheduleId && !schedules.some((slot) => String(slot.id ?? slot.scheduleId) === String(selectedScheduleId))) {
+    if (
+      selectedScheduleId &&
+      !schedules.some(
+        (slot) =>
+          String(slot.id ?? slot.scheduleId) === String(selectedScheduleId),
+      )
+    ) {
       setSelectedScheduleId(null)
     }
   }, [selectedScheduleId, schedules])
@@ -200,19 +181,20 @@ function BookAppointment() {
     const scheduleId = slot.id ?? slot.scheduleId
 
     if (!isFutureSlot(slot, new Date())) {
-      setBookingError('This appointment slot has expired. Please select another available slot.')
+      setBookingError(
+        'This appointment slot has expired. Please select another available slot.',
+      )
       setSelectedScheduleId(null)
       return
     }
 
     setSelectedScheduleId(scheduleId)
     setBookingError('')
+    setBookingSuccess(false)
   }
 
   const handleConfirmBooking = async () => {
-    if (!selectedScheduleId || booking) {
-      return
-    }
+    if (!selectedScheduleId || booking) return
 
     const userId = localStorage.getItem('userId')
 
@@ -222,11 +204,14 @@ function BookAppointment() {
     }
 
     const selectedSlot = schedules.find(
-      (slot) => String(slot.id ?? slot.scheduleId) === String(selectedScheduleId),
+      (slot) =>
+        String(slot.id ?? slot.scheduleId) === String(selectedScheduleId),
     )
 
     if (!selectedSlot || !isFutureSlot(selectedSlot, new Date())) {
-      setBookingError('This appointment slot has expired. Please select another available slot.')
+      setBookingError(
+        'This appointment slot has expired. Please select another available slot.',
+      )
       setSelectedScheduleId(null)
       return
     }
@@ -238,9 +223,7 @@ function BookAppointment() {
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/appointments/book?userId=${userId}&providerId=${providerId}&scheduleId=${selectedScheduleId}`,
-        {
-          method: 'POST',
-        },
+        { method: 'POST' },
       )
 
       const responseText = await response.text()
@@ -252,7 +235,6 @@ function BookAppointment() {
 
       setSelectedScheduleId(null)
       setBookingSuccess(true)
-      setBookingError('')
       await loadSchedules()
     } catch (err) {
       setBookingError(err.message || 'Unable to book appointment.')
@@ -270,7 +252,9 @@ function BookAppointment() {
   if (!userId) {
     return (
       <main className="booking-page">
-        <div className="status-message error">Please login before booking an appointment.</div>
+        <div className="status-message error">
+          Please login before booking an appointment.
+        </div>
         <div className="login-action-box">
           <Link to="/login" className="primary-btn">
             Login
@@ -282,7 +266,9 @@ function BookAppointment() {
 
   return (
     <main className="booking-page">
-      {providerLoading && <div className="status-message">Loading provider details...</div>}
+      {providerLoading && (
+        <div className="status-message">Loading provider details...</div>
+      )}
 
       {!providerLoading && providerError && (
         <div className="status-message error">{providerError}</div>
@@ -304,24 +290,32 @@ function BookAppointment() {
       <section className="booking-section">
         <h2>Available Appointment Slots</h2>
 
-        {scheduleLoading && <div className="status-message">Loading available slots...</div>}
+        {scheduleLoading && (
+          <div className="status-message">Loading available slots...</div>
+        )}
 
         {!scheduleLoading && scheduleError && (
           <div className="status-message error">{scheduleError}</div>
         )}
 
         {!scheduleLoading && !scheduleError && schedules.length === 0 && (
-          <div className="status-message">No available appointment slots at the moment.</div>
+          <div className="status-message">
+            No available appointment slots at the moment.
+          </div>
         )}
 
         {!scheduleLoading && !scheduleError && schedules.length > 0 && (
           <div className="slots-grid">
             {schedules.map((slot) => {
               const scheduleId = slot.id ?? slot.scheduleId
-              const isSelected = String(selectedScheduleId) === String(scheduleId)
+              const isSelected =
+                String(selectedScheduleId) === String(scheduleId)
 
               return (
-                <div key={scheduleId} className="slot-card">
+                <div
+                  key={scheduleId}
+                  className={`slot-card ${isSelected ? 'slot-card-selected' : ''}`}
+                >
                   <div className="slot-header">
                     <h3>{getScheduleDate(slot)}</h3>
                     <span className="slot-status available">Available</span>
@@ -332,7 +326,8 @@ function BookAppointment() {
                   </p>
 
                   <p>
-                    <strong>Available:</strong> {slot.available === true ? 'Yes' : 'No'}
+                    <strong>Available:</strong>{' '}
+                    {slot.available === true ? 'Yes' : 'No'}
                   </p>
 
                   <button
@@ -347,6 +342,7 @@ function BookAppointment() {
                   {isSelected && (
                     <button
                       type="button"
+                      className="primary-btn booking-confirm-btn"
                       onClick={handleConfirmBooking}
                       disabled={booking}
                     >
@@ -359,10 +355,14 @@ function BookAppointment() {
           </div>
         )}
 
-        {bookingError && <div className="status-message error">{bookingError}</div>}
+        {bookingError && (
+          <div className="status-message error" role="alert">
+            {bookingError}
+          </div>
+        )}
 
         {bookingSuccess && (
-          <div className="success-box">
+          <div className="success-box" role="status">
             <h3>Appointment booked successfully!</h3>
             <Link to="/my-appointments" className="primary-btn">
               View My Appointments

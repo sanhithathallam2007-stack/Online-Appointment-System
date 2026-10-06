@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +8,130 @@
     <title>Login - Online Appointment</title>
 
     <link rel="stylesheet" href="/css/style.css">
+
+    <style>
+        .auth-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            box-sizing: border-box;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 430px;
+            padding: 38px;
+            box-sizing: border-box;
+        }
+
+        .auth-icon {
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 22px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.75);
+            font-size: 30px;
+            box-shadow: 0 8px 24px rgba(40, 50, 90, 0.08);
+        }
+
+        .auth-card h1 {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .auth-subtitle {
+            text-align: center;
+            color: #686b78;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .input-group input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 14px 15px;
+            border: 1px solid rgba(120, 125, 150, 0.25);
+            border-radius: 13px;
+            background: rgba(255, 255, 255, 0.75);
+            color: #20212b;
+            font-size: 15px;
+            outline: none;
+        }
+
+        .input-group input:focus {
+            border-color: #858eea;
+            box-shadow: 0 0 0 3px rgba(133, 142, 234, 0.15);
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-wrapper input {
+            padding-right: 48px;
+        }
+
+        .show-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            color: #555b75;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        #loginForm .glass-button {
+            width: 100%;
+            margin-top: 8px;
+            padding: 15px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 25px;
+            color: #686b78;
+        }
+
+        .auth-footer a {
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .auth-home {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #555b75;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        @media (max-width: 480px) {
+            .auth-card {
+                padding: 26px 20px;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -15,9 +140,7 @@
 
     <div class="glass-card auth-card">
 
-        <div class="auth-icon">
-            🔐
-        </div>
+        <div class="auth-icon">🔐</div>
 
         <h1>Welcome Back</h1>
 
@@ -28,12 +151,13 @@
         <form id="loginForm">
 
             <div class="input-group">
-                <label for="email">Email</label>
+                <label for="email">Email Address</label>
 
                 <input
                     type="email"
                     id="email"
-                    placeholder="Enter your email"
+                    placeholder="you@example.com"
+                    autocomplete="email"
                     required
                 >
             </div>
@@ -41,16 +165,28 @@
             <div class="input-group">
                 <label for="password">Password</label>
 
-                <input
-                    type="password"
-                    id="password"
-                    placeholder="Enter your password"
-                    required
-                >
+                <div class="password-wrapper">
+                    <input
+                        type="password"
+                        id="password"
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
+                        required
+                    >
+
+                    <button
+                        type="button"
+                        class="show-password"
+                        id="togglePassword"
+                        aria-label="Show password"
+                    >
+                        👁️
+                    </button>
+                </div>
             </div>
 
             <button type="submit" class="glass-button">
-                Sign In
+                Sign In →
             </button>
 
         </form>
@@ -60,9 +196,31 @@
             <a href="/register.html">Create Account</a>
         </p>
 
+        <a href="/index.html" class="auth-home">
+            ← Back to Home
+        </a>
+
     </div>
 
 </div>
+
+<script>
+    const passwordInput = document.getElementById("password");
+    const togglePassword = document.getElementById("togglePassword");
+
+    togglePassword.addEventListener("click", function () {
+        const isPassword = passwordInput.type === "password";
+
+        passwordInput.type = isPassword ? "text" : "password";
+
+        togglePassword.textContent = isPassword ? "🙈" : "👁️";
+
+        togglePassword.setAttribute(
+            "aria-label",
+            isPassword ? "Hide password" : "Show password"
+        );
+    });
+</script>
 
 <script src="/js/login.js"></script>
 

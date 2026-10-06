@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/appointments")
-@CrossOrigin
 public class AppointmentController {
 
     private final AppointmentService appointmentService;

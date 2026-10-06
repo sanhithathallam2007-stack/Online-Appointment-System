@@ -1,15 +1,19 @@
+
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import API_BASE_URL from '../api'
+import PasswordInput from '../components/PasswordInput'
 
 function Register() {
   const navigate = useNavigate()
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
   })
+
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -25,6 +29,7 @@ function Register() {
 
   const handleChange = (event) => {
     const { name, value } = event.target
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -68,10 +73,15 @@ function Register() {
       const data = await response.json().catch(() => null)
 
       if (!response.ok) {
-        throw new Error(data?.message || data?.error || 'Registration failed. Please try again.')
+        throw new Error(
+          data?.message ||
+            data?.error ||
+            'Registration failed. Please try again.',
+        )
       }
 
       setSuccess(true)
+
       setFormData({
         name: '',
         email: '',
@@ -94,11 +104,12 @@ function Register() {
   }
 
   return (
-    <main className="auth-page">
-      <section className="auth-card">
-        <div className="auth-header">
-          <span className="section-tag">Create Account</span>
-          <h1>Register</h1>
+    <main className="auth-page auth-screen register-page">
+      <section className="auth-card register-card">
+        <div className="auth-header register-header">
+          <span className="eyebrow-label">CREATE ACCOUNT</span>
+          <h1>Join Us</h1>
+          <p>Create your account to book and manage appointments easily.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
@@ -128,10 +139,9 @@ function Register() {
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               value={formData.password}
               onChange={handleChange}
               placeholder="Enter your password"
@@ -140,28 +150,37 @@ function Register() {
 
           <div className="form-group">
             <label htmlFor="confirmPassword">Confirm Password</label>
-            <input
+            <PasswordInput
               id="confirmPassword"
               name="confirmPassword"
-              type="password"
               value={formData.confirmPassword}
               onChange={handleChange}
               placeholder="Confirm your password"
             />
           </div>
 
-          {error && <div className="status-message error">{error}</div>}
+          {error && (
+            <div className="status-message error">
+              {error}
+            </div>
+          )}
 
           {success && (
             <div className="success-box auth-success">
               <h3>Registration successful!</h3>
-              <Link to="/login" className="primary-btn">Login</Link>
+              <Link to="/login" className="primary-btn">
+                Login
+              </Link>
             </div>
           )}
 
           {!success && (
-            <button type="submit" className="primary-btn auth-submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating account...' : 'Register'}
+            <button
+              type="submit"
+              className="primary-btn auth-submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Creating account...' : 'Create Account'}
             </button>
           )}
         </form>

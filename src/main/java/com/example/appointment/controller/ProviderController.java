@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/providers")
-@CrossOrigin
 public class ProviderController {
 
     private final ProviderService providerService;

@@ -187,8 +187,12 @@ function MyAppointments() {
   }
 
   return (
-    <main className="appointments-page">
-      <h1>My Appointments</h1>
+    <main className="appointments-page bookings-screen">
+      <section className="screen-heading">
+        <span className="eyebrow-label">YOUR SCHEDULE</span>
+        <h1>Bookings</h1>
+        <p>Track your upcoming visits and appointment history.</p>
+      </section>
 
       {loading && <div className="status-message">Loading your appointments...</div>}
 

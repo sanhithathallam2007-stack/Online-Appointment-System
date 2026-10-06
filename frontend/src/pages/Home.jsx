@@ -1,106 +1,95 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import API_BASE_URL from '../api'
 
-const steps = [
-  { title: 'Login or Register', description: 'Create your account or sign in to access the system.' },
-  { title: 'Choose a Category', description: 'Browse services by Hospitals, Schools, Government, Business, Public Representatives, or Entertainment.' },
-  { title: 'Select a Professional', description: 'Find the right provider and review their profile and availability.' },
-  { title: 'Choose an Available Slot', description: 'Pick a time that works for you from the available schedule.' },
-  { title: 'Book Appointment', description: 'Confirm your appointment and manage it from My Appointments.' },
-]
-
-const features = [
-  { icon: '⚡', title: 'Easy Booking', description: 'Book in a few clear steps with a simple and responsive interface.' },
-  { icon: '🗓️', title: 'Available Time Slots', description: 'View only valid, current, and upcoming slots without expired times.' },
-  { icon: '📋', title: 'Appointment Management', description: 'Track your booking status, upcoming visits, and past appointments.' },
-  { icon: '🔄', title: 'Reschedule Appointments', description: 'Update your appointment when your schedule changes and a new slot is available.' },
-  { icon: '🔐', title: 'Secure User Access', description: 'Protected user flows keep personal booking details safe.' },
-  { icon: '👩‍⚕️', title: 'Provider Management', description: 'Coordinate provider schedules and appointment workflows from dedicated dashboards.' },
-]
-
 function Home() {
+  const [categories, setCategories] = useState([])
+  const [loadingCategories, setLoadingCategories] = useState(true)
+  const [categoriesError, setCategoriesError] = useState('')
+  const userName = localStorage.getItem('userName') || ''
+  const firstName = userName.trim().split(/\s+/)[0]
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setCategoriesError('')
+        const response = await fetch(`${API_BASE_URL}/api/categories`)
+        if (!response.ok) throw new Error('Unable to load categories.')
+        const data = await response.json()
+        setCategories(Array.isArray(data) ? data : [])
+      } catch (error) {
+        setCategoriesError(error.message || 'Unable to load categories.')
+      } finally {
+        setLoadingCategories(false)
+      }
+    }
+
+    loadCategories()
+  }, [])
+
+  const getCategoryName = (category) =>
+    category?.categoryName || category?.name || category?.title || 'Service'
+
+  const getCategoryPath = (category) => {
+    if (String(category.id) === '1') return '/hospitals'
+    if (String(category.id) === '2') return '/schools'
+    return `/subcategories?categoryId=${category.id}`
+  }
+
+  const categoryIcons = { 1: '✳', 2: '⌂', 3: '◈', 4: '▤', 5: '◎', 6: '✦' }
+
   return (
-    <main className="home-page">
-      <section className="hero-section">
-        <div className="hero-content">
-          <span className="eyebrow">Easy booking for every service</span>
-          <h1>Book Appointments Easily</h1>
-          <p>
-            Find the right professional, choose an available time slot, and manage your appointments
-            in one place.
-          </p>
-
-          <div className="hero-actions">
-            <Link to="/categories" className="primary-btn">
-              Browse Categories
-            </Link>
-            <Link to="/my-appointments" className="secondary-btn">
-              My Appointments
-            </Link>
-          </div>
-        </div>
-
-        <div className="hero-card">
-          <div className="mini-stat">
-            <strong>6</strong>
-            <span>Supported categories</span>
-          </div>
-          <div className="mini-stat">
-            <strong>30+</strong>
-            <span>Verified providers</span>
-          </div>
-          <div className="mini-stat">
-            <strong>24/7</strong>
-            <span>Online access</span>
-          </div>
+    <main className="home-screen">
+      <section className="home-welcome">
+        <span className="eyebrow-label">YOUR APPOINTMENT SPACE</span>
+        <h1>{firstName ? `Good to see you, ${firstName}.` : 'Appointments, at your pace.'}</h1>
+        <p>Find the right provider, choose a time, and keep your plans in one place.</p>
+        <div className="home-actions">
+          <Link to="/categories" className="primary-btn">Explore services <span aria-hidden="true">→</span></Link>
+          <Link to="/my-appointments" className="home-secondary-link">View bookings</Link>
         </div>
       </section>
 
-      <section className="info-section">
-        <div className="section-heading">
-          <span className="section-tag">How It Works</span>
-          <h2>Book in a few simple steps</h2>
-        </div>
-
-        <div className="steps-grid">
-          {steps.map((step, index) => (
-            <div key={step.title} className="step-card">
-              <div className="step-number">0{index + 1}</div>
-              <h3>{step.title}</h3>
-              <p>{step.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="info-section">
-        <div className="section-heading">
-          <span className="section-tag">Platform Features</span>
-          <h2>Everything needed for appointment booking</h2>
-        </div>
-
-        <div className="services-grid">
-          {features.map((feature) => (
-            <div key={feature.title} className="service-card">
-              <div className="service-icon" aria-hidden="true">
-                {feature.icon}
-              </div>
-              <h3>{feature.title}</h3>
-              <p>{feature.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="info-section help-section">
-        <div className="cta-box compact-help-box">
+      <section className="home-category-section">
+        <div className="home-section-heading">
           <div>
-            <span className="section-tag light-tag">Need Help?</span>
-            <h2>Ask the AI assistant for quick appointment help.</h2>
+            <span className="eyebrow-label">FIND YOUR SERVICE</span>
+            <h2>Explore categories</h2>
           </div>
-          <Link to="/categories" className="primary-btn">
-            Explore Categories
-          </Link>
+          <Link to="/categories" className="text-link">See all <span aria-hidden="true">→</span></Link>
+        </div>
+
+        {loadingCategories && <div className="status-message">Loading categories...</div>}
+        {!loadingCategories && categoriesError && (
+          <div className="status-message error" role="alert">
+            {categoriesError}
+            <button type="button" className="secondary-btn" onClick={() => window.location.reload()}>Try again</button>
+          </div>
+        )}
+        {!loadingCategories && !categoriesError && categories.length === 0 && (
+          <div className="status-message">No categories are available right now.</div>
+        )}
+
+        {!loadingCategories && !categoriesError && categories.length > 0 && (
+          <div className="home-category-grid">
+            {categories.slice(0, 6).map((category) => (
+              <Link key={category.id || getCategoryName(category)} to={getCategoryPath(category)} className="home-category-link">
+                <span className="home-category-icon" aria-hidden="true">{categoryIcons[category.id] || '✳'}</span>
+                <span className="home-category-name">{getCategoryName(category)}</span>
+                <span className="home-category-arrow" aria-hidden="true">↗</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="home-booking-prompt">
+        <div className="home-prompt-mark" aria-hidden="true">✳</div>
+        <div>
+          <span className="eyebrow-label">READY WHEN YOU ARE</span>
+          <h2>Already have a visit planned?</h2>
+          <p>Check its time and status, or make changes to an eligible booking.</p>
+          <Link to="/my-appointments" className="prompt-link">Go to bookings <span aria-hidden="true">→</span></Link>
         </div>
       </section>
     </main>
