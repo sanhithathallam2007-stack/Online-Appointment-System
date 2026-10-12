@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import API_BASE_URL from '../api'
@@ -72,6 +71,10 @@ function Register() {
 
       const data = await response.json().catch(() => null)
 
+      // DEBUG INFORMATION
+      console.log('REGISTER STATUS:', response.status)
+      console.log('REGISTER RESPONSE:', data)
+
       if (!response.ok) {
         throw new Error(
           data?.message ||
@@ -97,6 +100,7 @@ function Register() {
         navigate('/login', { replace: true })
       }, 1200)
     } catch (err) {
+      console.error('REGISTER ERROR:', err)
       setError(err.message || 'Registration failed. Please try again.')
     } finally {
       setIsSubmitting(false)
@@ -108,13 +112,18 @@ function Register() {
       <section className="auth-card register-card">
         <div className="auth-header register-header">
           <span className="eyebrow-label">CREATE ACCOUNT</span>
+
           <h1>Join Us</h1>
-          <p>Create your account to book and manage appointments easily.</p>
+
+          <p>
+            Create your account to book and manage appointments easily.
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label htmlFor="name">Full Name</label>
+
             <input
               id="name"
               name="name"
@@ -127,6 +136,7 @@ function Register() {
 
           <div className="form-group">
             <label htmlFor="email">Email</label>
+
             <input
               id="email"
               name="email"
@@ -139,6 +149,7 @@ function Register() {
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
+
             <PasswordInput
               id="password"
               name="password"
@@ -149,7 +160,10 @@ function Register() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
+            <label htmlFor="confirmPassword">
+              Confirm Password
+            </label>
+
             <PasswordInput
               id="confirmPassword"
               name="confirmPassword"
@@ -168,6 +182,7 @@ function Register() {
           {success && (
             <div className="success-box auth-success">
               <h3>Registration successful!</h3>
+
               <Link to="/login" className="primary-btn">
                 Login
               </Link>
@@ -180,13 +195,16 @@ function Register() {
               className="primary-btn auth-submit"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Creating account...' : 'Create Account'}
+              {isSubmitting
+                ? 'Creating account...'
+                : 'Create Account'}
             </button>
           )}
         </form>
 
         <p className="auth-switch">
-          Already have an account? <Link to="/login">Login</Link>
+          Already have an account?{' '}
+          <Link to="/login">Login</Link>
         </p>
       </section>
     </main>
