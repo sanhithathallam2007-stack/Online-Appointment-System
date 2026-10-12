@@ -1,41 +1,7 @@
-# Java / build outputs
-*.class
-*.log
-*.jar
-*.war
-*.ear
-*.zip
-*.tar.gz
-*.rar
-hs_err_pid*
-replay_pid*
-
-# Maven / Gradle build output
-/target/
 target/
-
-# Frontend dependencies and build output
-frontend/node_modules/
-frontend/dist/
-
-# Python virtual environments
-.venv/
-venv/
-
-# Environment files
-.env
-.env.*
-!.env.example
-
-# Local editor and OS files
-.DS_Store
 .idea/
 .vscode/
-*.swp
-*.swo
-
-# Local secrets or config overrides
-local.properties
+.DS_Store
+.env
 application-local.properties
-*.local
-
+node_modules/
