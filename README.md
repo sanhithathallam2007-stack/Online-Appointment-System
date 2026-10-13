@@ -38,11 +38,28 @@ Spring Data JPA
 ↓
 MySQL
 
+## Project Structure
+
+```
+Online-Appointment-System/
+├── backend/             # Spring Boot REST API (Java, Spring Data JPA, MySQL)
+│   ├── src/             # Application source code and tests
+│   ├── pom.xml          # Maven dependencies and build configuration
+│   ├── mvnw / mvnw.cmd  # Maven wrapper scripts
+│   └── HELP.md          # Spring Boot help guide
+├── frontend/            # React JS web application (Vite)
+│   ├── src/             # React components, pages, services
+│   ├── package.json     # Node.js dependencies and scripts
+│   └── vite.config.js   # Vite build configuration
+└── README.md            # Project documentation
+```
+
 ## Local Development
 
 ### Backend
 
 ```bash
+cd backend
 ./mvnw spring-boot:run
 ```
 
@@ -56,20 +73,21 @@ npm run dev
 
 ### Run the combined application
 
-1. From the project root, install the frontend dependencies once:
+1. Install the frontend dependencies once:
 
 ```bash
-cd frontend && npm ci
+cd frontend
+npm install
 ```
 
-2. Return to the project root and start Spring Boot:
+2. Start the Spring Boot backend:
 
 ```bash
-cd ..
+cd ../backend
 ./mvnw spring-boot:run
 ```
 
-The Maven build runs the React production build and places its output under generated `static/app` resources. Spring Boot serves the React application at `http://localhost:8080`; the original static HTML files remain in `src/main/resources/static` and are not overwritten. React routes are forwarded to the app entry point so they can be refreshed directly.
+The Maven build runs the React production build and places its output under generated `static/app` resources. Spring Boot serves the React application at `http://localhost:8080`; the original static HTML files remain in `backend/src/main/resources/static` and are not overwritten. React routes are forwarded to the app entry point so they can be refreshed directly.
 
 During development, run Spring Boot on port 8080 and Vite on port 5173. Vite proxies `/api` requests to Spring Boot. For deployments where the frontend and API use different origins, set `VITE_API_BASE_URL` before building; leave it blank when Spring Boot serves both on the same origin.
 

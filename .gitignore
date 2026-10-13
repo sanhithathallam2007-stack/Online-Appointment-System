@@ -1,7 +1,10 @@
 target/
+**/target/
 .idea/
 .vscode/
 .DS_Store
+**/.DS_Store
 .env
 application-local.properties
 node_modules/
+**/node_modules/
